@@ -31,6 +31,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         code, pre { font-family: 'JetBrains Mono', monospace; }
+        /* Custom scrollbars */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #1f2937; }
         ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
@@ -49,9 +50,9 @@
                 <div>
                     <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
                         WebGPU AI Benchmarker
-                        <span class="text-xs font-mono font-normal px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">WebLLM v0.2.78</span>
+                        <span class="text-xs font-mono font-normal px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">100% In-Browser</span>
                     </h1>
-                    <p class="text-xs text-slate-400">Tóm tắt bản tin bằng Model Local trực tiếp qua WebGPU / WASM</p>
+                    <p class="text-xs text-slate-400">Tóm tắt bản tin bằng Model Local chạy trực tiếp qua WebGPU/WASM</p>
                 </div>
             </div>
 
@@ -80,30 +81,34 @@
                     <h2 class="font-semibold text-sm uppercase tracking-wider text-emerald-400 flex items-center gap-2">
                         <i class="fa-solid fa-microchip"></i> 1. Chọn Local Model (WebLLM)
                     </h2>
-                    <span class="text-xs text-slate-400 font-mono" id="model-size-badge">~900 MB</span>
+                    <span class="text-xs text-slate-400 font-mono" id="model-size-badge">~1.6 GB</span>
                 </div>
 
                 <div class="space-y-2">
-                    <label for="model-select" class="text-xs font-medium text-slate-300">Danh sách Model khả thi trên Mobile:</label>
+                    <label for="model-select" class="text-xs font-medium text-slate-300">Danh sách Model có sẵn:</label>
                     <select id="model-select" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-sm rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition font-sans">
-                        <optgroup label="🔥 Khuyên dùng mới nhất (Google Gemma 3 & Qwen)">
-                            <option value="gemma-3-1b-it-q4f16_1-MLC" data-size="~900 MB" selected>Gemma 3 - 1B Instruct (Google 2025 - Cực nhẹ, thông minh & mượt)</option>
-                            <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" data-size="~980 MB">Qwen 2.5 - 1.5B (Tiếng Việt rất chuẩn, cân bằng tốt)</option>
+                        <optgroup label="🔥 Khuyên dùng (Google Gemma 2 & Llama 3.2)">
+                            <option value="gemma-2-2b-it-q4f16_1-MLC" data-size="~1.6 GB" selected>Gemma 2 - 2B Instruct (Google - Tư duy tốt, ổn định)</option>
+                            <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC" data-size="~700 MB">Llama 3.2 - 1B Instruct (Meta - Cực nhẹ & Nhanh)</option>
                         </optgroup>
-                        <optgroup label="🟢 Siêu nhẹ (Dưới 1GB)">
-                            <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC" data-size="~700 MB">Llama 3.2 - 1B (Meta Lightweight)</option>
-                            <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" data-size="~350 MB">Qwen 2.5 - 0.5B (Siêu nhẹ, tốc độ cao)</option>
-                            <option value="SmolLM2-1.7B-Instruct-q4f16_1-MLC" data-size="~1.0 GB">SmolLM2 - 1.7B</option>
+                        <optgroup label="🟢 Siêu nhẹ (Cho Điện thoại / Máy yếu)">
+                            <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" data-size="~350 MB">Qwen 2.5 - 0.5B (Siêu nhẹ, tiếng Việt tốt)</option>
+                            <option value="SmolLM2-1.7B-Instruct-q4f16_1-MLC" data-size="~1.0 GB">SmolLM2 - 1.7B (Cấu trúc tối ưu gọn nhẹ)</option>
+                            <option value="gemma-2b-it-q4f16_1-MLC" data-size="~1.3 GB">Gemma 1 - 2B Instruct (Google Classic)</option>
                         </optgroup>
-                        <optgroup label="🟡 Máy mạnh / RAM lớn (>= 12GB RAM hoặc PC)">
-                            <option value="gemma-2-2b-it-q4f16_1-MLC" data-size="~1.6 GB">Gemma 2 - 2B Instruct (Thế hệ trước - Cần RAM lớn)</option>
-                            <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC" data-size="~1.8 GB">Llama 3.2 - 3B Instruct</option>
+                        <optgroup label="🟡 Vừa phải (Cho Laptop / ĐT Cấu hình mạnh)">
+                            <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" data-size="~980 MB">Qwen 2.5 - 1.5B (Độ chính xác cao hơn)</option>
+                            <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC" data-size="~1.8 GB">Llama 3.2 - 3B (Suy luận tốt, ngốn RAM vừa)</option>
+                        </optgroup>
+                        <optgroup label="🔴 Nặng (Chỉ nên xài trên PC / Card rời)">
+                            <option value="Qwen2.5-7B-Instruct-q4f16_1-MLC" data-size="~4.3 GB">Qwen 2.5 - 7B (Nặng, chất lượng đỉnh cao)</option>
                         </optgroup>
                     </select>
                 </div>
 
-                <div class="text-xs text-slate-400 bg-slate-950 p-3 rounded-xl border border-slate-800/80 leading-relaxed space-y-1">
-                    <p><i class="fa-solid fa-circle-info text-emerald-400 mr-1"></i> <strong>Lưu ý iOS (iPhone):</strong> Safari giới hạn RAM mỗi tab ở mức ~2.5GB. Các model >1.5B (Gemma 2B, Llama 3B) sẽ làm crash Safari do OOM (Out Of Memory).</p>
+                <div class="text-xs text-slate-400 bg-slate-950 p-3 rounded-xl border border-slate-800/80 leading-relaxed">
+                    <i class="fa-solid fa-circle-info text-emerald-400 mr-1"></i>
+                    Lần đầu chọn model trình duyệt sẽ cần tải file weight về Cache (IndexedDB). Từ lần thứ 2 sẽ load trực tiếp cực kỳ nhanh!
                 </div>
 
                 <div class="flex items-center gap-2 pt-1">
@@ -117,7 +122,7 @@
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4 flex-1 flex flex-col">
                 <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                     <h2 class="font-semibold text-sm uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                        <i class="fa-solid fa-newspaper"></i> 2. Chọn bài báo tóm tắt
+                        <i class="fa-solid fa-newspaper"></i> 2. Chọn bài báo tóm tắt (10 RSS English)
                     </h2>
                     <div class="flex items-center gap-2">
                         <button id="btn-select-all" class="text-xs text-emerald-400 hover:underline">Tất cả</button>
@@ -137,14 +142,15 @@
                 </div>
             </div>
 
-            <!-- Parameters & Execution Control -->
+            <!-- Execution Control & Config Parameters -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
                 <div class="flex items-center justify-between">
                     <label for="system-prompt" class="text-xs font-semibold text-slate-300">System Instruction / Prompt Yêu Cầu:</label>
                     <button id="btn-reset-prompt" class="text-[11px] text-slate-400 hover:text-emerald-400">Khôi phục mặc định</button>
                 </div>
-                <textarea id="system-prompt" rows="2" class="w-full bg-slate-950 border border-slate-700 text-slate-300 text-xs rounded-xl p-2.5 focus:ring-1 focus:ring-emerald-500 outline-none resize-none font-mono">Bạn là trợ lý AI tóm tắt tin tức. Hãy đọc các bài báo sau và viết tóm tắt bằng Tiếng Việt ngắn gọn, đàng hoàng, trình bày dạng danh sách gạch đầu dòng (bullet points).</textarea>
+                <textarea id="system-prompt" rows="2" class="w-full bg-slate-950 border border-slate-700 text-slate-300 text-xs rounded-xl p-2.5 focus:ring-1 focus:ring-emerald-500 outline-none resize-none font-mono">Tóm tắt ngắn gọn các bản tin tin tức tiếng Anh dưới đây sang Tiếng Việt. Trình bày dạng các đầu dòng (bullet points) rõ ràng, dễ đọc.</textarea>
 
+                <!-- Model Generation Parameters (Temperature & Repetition Penalty) -->
                 <div class="grid grid-cols-2 gap-3 pt-1">
                     <div>
                         <label class="text-[11px] text-slate-400 block mb-1">Temperature: <span id="val-temp" class="text-emerald-400 font-mono">0.5</span></label>
@@ -182,8 +188,8 @@
                         <p class="text-[11px] text-slate-400 uppercase font-medium">Model Load Time</p>
                         <p id="stat-load-time" class="text-lg font-bold font-mono text-cyan-400 mt-1">0.00s</p>
                     </div>
-                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80" title="Time To First Token (Bao gồm Shader Compilation & Prefill Context)">
-                        <p class="text-[11px] text-slate-400 uppercase font-medium">First Token (TTFT) ℹ️</p>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <p class="text-[11px] text-slate-400 uppercase font-medium">First Token (TTFT)</p>
                         <p id="stat-ttft" class="text-lg font-bold font-mono text-amber-400 mt-1">0 ms</p>
                     </div>
                     <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
@@ -281,7 +287,7 @@
 
     <!-- Application Logic Script -->
     <script type="module">
-        // Reverted to stable WebLLM v0.2.78 package
+        // Import WebLLM package (v0.2.78+)
         import * as webllm from "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.78/+esm";
 
         // 10 Article Summaries in English (Tech / Science / AI)
@@ -417,7 +423,7 @@
             if (!navigator.gpu) {
                 el.gpuDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
                 el.gpuText.textContent = "WebGPU Không Hỗ Trợ";
-                showAlert("Cảnh Báo WebGPU", "Trình duyệt chưa hỗ trợ WebGPU. Cần sử dụng Safari iOS 18+, Chrome/Edge v113+ và bật Hardware Acceleration.");
+                showAlert("Cảnh Báo WebGPU", "Trình duyệt chưa hỗ trợ WebGPU. Cần sử dụng Chrome/Edge v113+ hoặc Safari iOS 18+ và bật Hardware Acceleration.");
                 return false;
             }
             try {
@@ -433,6 +439,23 @@
                 showAlert("WebGPU Adapter Error", "Không thể khởi tạo WebGPU Adapter.");
                 return false;
             }
+        }
+
+        function validateModelSelection(modelId) {
+            if (!webllm || !webllm.prebuiltAppConfig || !webllm.prebuiltAppConfig.model_list) {
+                return true;
+            }
+            const prebuiltList = webllm.prebuiltAppConfig.model_list.map(m => m.model_id);
+            if (!prebuiltList.includes(modelId)) {
+                const availableGemma = prebuiltList.find(m => m.toLowerCase().includes('gemma')) || prebuiltList[0];
+                showAlert(
+                    "Model Không Khả Dụng", 
+                    `Model "${modelId}" không nằm trong danh sách cấu hình mặc định WebLLM. Tự động chuyển hướng sang "${availableGemma}".`
+                );
+                el.modelSelect.value = availableGemma;
+                return false;
+            }
+            return true;
         }
 
         // Render Article Checklist UI
@@ -495,7 +518,11 @@
 
         // WebLLM Engine Loading Function
         async function loadWebLLMEngine(selectedModel) {
-            if (engine && currentModel === selectedModel) {
+            // Validate model ID exists in WebLLM prebuilt records
+            validateModelSelection(selectedModel);
+            const activeModelId = el.modelSelect.value;
+
+            if (engine && currentModel === activeModelId) {
                 return engine;
             }
 
@@ -517,12 +544,11 @@
             };
 
             try {
-                // Initialize MLC Engine using standard webllm CreateMLCEngine
-                engine = await webllm.CreateMLCEngine(selectedModel, {
+                engine = await webllm.CreateMLCEngine(activeModelId, {
                     initProgressCallback: initProgressCallback
                 });
 
-                currentModel = selectedModel;
+                currentModel = activeModelId;
                 const loadDuration = ((performance.now() - startTime) / 1000).toFixed(2);
                 el.statLoadTime.textContent = `${loadDuration}s`;
 
@@ -532,7 +558,7 @@
                 return engine;
             } catch (err) {
                 console.error("WebLLM Engine Error:", err);
-                showAlert("Lỗi Tải Model", `Không thể khởi tạo ${selectedModel}. Chi tiết: ${err.message || err}`);
+                showAlert("Lỗi Tải Model", `Không thể khởi tạo ${activeModelId}. Chi tiết: ${err.message || err}`);
                 el.progressWrapper.classList.add('hidden');
                 throw err;
             } finally {
@@ -543,4 +569,206 @@
         }
 
         el.btnLoadModel.addEventListener('click', async () => {
-<!-- ... existing code -->
+            const selectedModel = el.modelSelect.value;
+            try {
+                await loadWebLLMEngine(selectedModel);
+            } catch (err) {
+                // Handled inside loadWebLLMEngine
+            }
+        });
+
+        // Start Summarization & Benchmark
+        el.btnRun.addEventListener('click', async () => {
+            if (selectedArticleIds.size === 0) {
+                showAlert("Chưa Chọn Bài Báo", "Vui lòng chọn ít nhất 1 bài báo để tiến hành tóm tắt.");
+                return;
+            }
+
+            const selectedModel = el.modelSelect.value;
+            const systemPromptText = el.systemPrompt.value.trim();
+            const tempVal = parseFloat(el.paramTemp.value);
+            const repVal = parseFloat(el.paramRep.value);
+
+            try {
+                const activeEngine = await loadWebLLMEngine(selectedModel);
+                if (!activeEngine) return;
+
+                // Prepare Articles Content
+                const selectedArticles = ARTICLES.filter(a => selectedArticleIds.has(a.id));
+                const userContent = selectedArticles.map((a, idx) => `[Bài ${idx + 1}: ${a.title}]\nCategory: ${a.category}\nContent: ${a.content}`).join("\n\n");
+
+                // UI Reset
+                isGenerating = true;
+                el.btnRun.disabled = true;
+                el.btnStop.disabled = false;
+                el.btnCopy.disabled = true;
+                el.outputText.textContent = "";
+
+                // Reset Stats
+                el.statTtft.textContent = "0 ms";
+                el.statSpeed.textContent = "0.0 tok/s";
+                el.statTokens.textContent = "0 tokens";
+
+                const messages = [
+                    { role: "system", content: systemPromptText },
+                    { role: "user", content: `Dưới đây là các bản tin cần tóm tắt:\n\n${userContent}` }
+                ];
+
+                const genStartTime = performance.now();
+                let firstTokenTime = null;
+                let tokenCount = 0;
+                let fullText = "";
+
+                // Stream completion with temperature and repetition penalty
+                const completion = await activeEngine.chat.completions.create({
+                    messages: messages,
+                    temperature: tempVal,
+                    repetition_penalty: repVal,
+                    stream: true
+                });
+
+                for await (const chunk of completion) {
+                    if (!isGenerating) break; // User stopped generation
+
+                    const delta = chunk.choices[0]?.delta?.content || "";
+                    if (delta) {
+                        if (!firstTokenTime) {
+                            firstTokenTime = performance.now();
+                            const ttft = Math.round(firstTokenTime - genStartTime);
+                            el.statTtft.textContent = `${ttft} ms`;
+                        }
+
+                        tokenCount++;
+                        fullText += delta;
+                        el.outputText.textContent = fullText;
+
+                        // Auto scroll to bottom
+                        el.outputText.parentElement.scrollTop = el.outputText.parentElement.scrollHeight;
+
+                        // Calculate speed
+                        const elapsedSec = (performance.now() - firstTokenTime) / 1000;
+                        if (elapsedSec > 0) {
+                            const speed = (tokenCount / elapsedSec).toFixed(1);
+                            el.statSpeed.textContent = `${speed} tok/s`;
+                        }
+                        el.statTokens.textContent = `${tokenCount} tokens`;
+                    }
+                }
+
+                // Finish up benchmark log
+                const totalGenTime = ((performance.now() - genStartTime) / 1000).toFixed(2);
+                const finalTtft = firstTokenTime ? Math.round(firstTokenTime - genStartTime) : 0;
+                const finalSpeed = firstTokenTime && (performance.now() - firstTokenTime) > 0 
+                    ? (tokenCount / ((performance.now() - firstTokenTime) / 1000)).toFixed(1) 
+                    : "0.0";
+
+                addBenchmarkHistory({
+                    model: selectedModel,
+                    loadTime: el.statLoadTime.textContent,
+                    ttft: `${finalTtft} ms`,
+                    speed: `${finalSpeed} tok/s`,
+                    tokens: `${tokenCount} tokens`
+                });
+
+                el.btnCopy.disabled = false;
+
+            } catch (err) {
+                console.error("Inference Error:", err);
+                showAlert("Lỗi Trong Khi Tóm Tắt", `Có lỗi xảy ra: ${err.message || err}`);
+            } finally {
+                isGenerating = false;
+                el.btnRun.disabled = false;
+                el.btnStop.disabled = true;
+            }
+        });
+
+        // Stop Generation
+        el.btnStop.addEventListener('click', () => {
+            isGenerating = false;
+            el.btnStop.disabled = true;
+            el.btnRun.disabled = false;
+        });
+
+        // Copy Result
+        el.btnCopy.addEventListener('click', () => {
+            const textToCopy = el.outputText.textContent;
+            if (!textToCopy) return;
+
+            const textarea = document.createElement('textarea');
+            textarea.value = textToCopy;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            const origHtml = el.btnCopy.innerHTML;
+            el.btnCopy.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> Đã Copy`;
+            setTimeout(() => el.btnCopy.innerHTML = origHtml, 2000);
+        });
+
+        // Clear Output
+        el.btnClearOut.addEventListener('click', () => {
+            el.outputText.innerHTML = `<p class="text-slate-500 italic text-xs">Bấm nút "BẮT ĐẦU TÓM TẮT & BENCHMARK" để tải model và sinh kết quả ở đây...</p>`;
+            el.btnCopy.disabled = true;
+        });
+
+        // Clear Model Cache (IndexedDB)
+        el.btnClearCache.addEventListener('click', async () => {
+            if (confirm("Bạn có chắc chắn muốn xóa Cache model trong bộ nhớ trình duyệt không?")) {
+                try {
+                    if (window.indexedDB && window.indexedDB.databases) {
+                        const dbs = await window.indexedDB.databases();
+                        for (const db of dbs) {
+                            if (db.name && (db.name.includes("mlc") || db.name.includes("webllm"))) {
+                                window.indexedDB.deleteDatabase(db.name);
+                            }
+                        }
+                    }
+                    showAlert("Thành Công", "Đã dọn dẹp cache model thành công. Hãy tải lại trang!");
+                } catch (e) {
+                    showAlert("Thông báo", "Vui lòng dùng công cụ Developer Tools > Application > Clear storage để xóa cache.");
+                }
+            }
+        });
+
+        // Prompt Reset
+        el.btnResetPrompt.addEventListener('click', () => {
+            el.systemPrompt.value = "Tóm tắt ngắn gọn các bản tin tin tức tiếng Anh dưới đây sang Tiếng Việt. Trình bày dạng các đầu dòng (bullet points) rõ ràng, dễ đọc.";
+        });
+
+        // Benchmark History
+        function addBenchmarkHistory(entry) {
+            benchmarkLogs.unshift(entry);
+            renderHistoryTable();
+        }
+
+        function renderHistoryTable() {
+            if (benchmarkLogs.length === 0) {
+                el.historyTbody.innerHTML = `<tr><td colspan="5" class="py-3 text-center text-slate-500 italic font-sans">Chưa có dữ liệu benchmark nào.</td></tr>`;
+                return;
+            }
+
+            el.historyTbody.innerHTML = benchmarkLogs.map(log => `
+                <tr class="hover:bg-slate-800/40 transition">
+                    <td class="py-2 font-medium text-emerald-400 truncate max-w-[140px]" title="${log.model}">${log.model}</td>
+                    <td class="py-2 text-cyan-300">${log.loadTime}</td>
+                    <td class="py-2 text-amber-300">${log.ttft}</td>
+                    <td class="py-2 text-emerald-300 font-bold">${log.speed}</td>
+                    <td class="py-2 text-indigo-300">${log.tokens}</td>
+                </tr>
+            `).join('');
+        }
+
+        el.btnClearHistory.addEventListener('click', () => {
+            benchmarkLogs = [];
+            renderHistoryTable();
+        });
+
+        // App Initialization
+        window.addEventListener('DOMContentLoaded', async () => {
+            await checkWebGPUSupport();
+            renderArticles();
+        });
+    </script>
+</body>
+</html>
