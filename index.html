@@ -31,7 +31,6 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         code, pre { font-family: 'JetBrains Mono', monospace; }
-        /* Custom scrollbars */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #1f2937; }
         ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
@@ -50,9 +49,9 @@
                 <div>
                     <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
                         WebGPU AI Benchmarker
-                        <span class="text-xs font-mono font-normal px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">100% In-Browser</span>
+                        <span class="text-xs font-mono font-normal px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">WebLLM v0.2.85</span>
                     </h1>
-                    <p class="text-xs text-slate-400">Tóm tắt bản tin bằng Model Local chạy trực tiếp qua WebGPU/WASM</p>
+                    <p class="text-xs text-slate-400">Tóm tắt bản tin bằng Model Local trực tiếp qua WebGPU / WASM</p>
                 </div>
             </div>
 
@@ -81,31 +80,29 @@
                     <h2 class="font-semibold text-sm uppercase tracking-wider text-emerald-400 flex items-center gap-2">
                         <i class="fa-solid fa-microchip"></i> 1. Chọn Local Model (WebLLM)
                     </h2>
-                    <span class="text-xs text-slate-400 font-mono" id="model-size-badge">~350 MB</span>
+                    <span class="text-xs text-slate-400 font-mono" id="model-size-badge">~980 MB</span>
                 </div>
 
                 <div class="space-y-2">
-                    <label for="model-select" class="text-xs font-medium text-slate-300">Danh sách Model có sẵn:</label>
+                    <label for="model-select" class="text-xs font-medium text-slate-300">Danh sách Model khả thi trên Mobile:</label>
                     <select id="model-select" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-sm rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition font-sans">
-                        <optgroup label="🟢 Siêu nhẹ (Khuyên dùng cho Điện thoại / Máy yếu)">
-                            <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" data-size="~350 MB" selected>Qwen 2.5 - 0.5B (Cực nhanh, tiếng Việt tốt)</option>
-                            <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC" data-size="~700 MB">Llama 3.2 - 1B (Nhẹ nhàng, cân bằng)</option>
-                            <option value="SmolLM2-1.7B-Instruct-q4f16_1-MLC" data-size="~1.0 GB">SmolLM2 - 1.7B (Cấu trúc tối ưu gọn nhẹ)</option>
+                        <optgroup label="⭐ Khuyên dùng cho Điện thoại (Cân bằng tốt nhất)">
+                            <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" data-size="~980 MB" selected>Qwen 2.5 - 1.5B (Khuyến nghị: Tiếng Việt tốt, không crash RAM)</option>
                         </optgroup>
-                        <optgroup label="🟡 Vừa phải (Cho Laptop / ĐT Cấu hình mạnh)">
-                            <option value="gemma-2-2b-it-q4f16_1-MLC" data-size="~1.6 GB">Gemma 2 - 2B Instruct (Google, tư duy tốt)</option>
-                            <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" data-size="~980 MB">Qwen 2.5 - 1.5B (Độ chính xác cao hơn)</option>
-                            <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC" data-size="~1.8 GB">Llama 3.2 - 3B (Suy luận tốt, ngốn RAM vừa)</option>
+                        <optgroup label="🟢 Siêu nhẹ (Thử nghiệm)">
+                            <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC" data-size="~700 MB">Llama 3.2 - 1B (Đã thêm Repetition Penalty chống lặp)</option>
+                            <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" data-size="~350 MB">Qwen 2.5 - 0.5B (Rất nhẹ, ưu tiên prompt ngắn)</option>
+                            <option value="SmolLM2-1.7B-Instruct-q4f16_1-MLC" data-size="~1.0 GB">SmolLM2 - 1.7B (Nhẹ nhàng)</option>
                         </optgroup>
-                        <optgroup label="🔴 Nặng (Chỉ nên xài trên PC / Card rời)">
-                            <option value="Qwen2.5-7B-Instruct-q4f16_1-MLC" data-size="~4.3 GB">Qwen 2.5 - 7B (Nặng, chất lượng đỉnh cao)</option>
+                        <optgroup label="🟡 Vừa phải (Máy Android RAM >= 12GB / PC)">
+                            <option value="gemma-2-2b-it-q4f16_1-MLC" data-size="~1.6 GB">Gemma 2 - 2B Instruct (Tư duy tốt - Cần RAM lớn)</option>
+                            <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC" data-size="~1.8 GB">Llama 3.2 - 3B (Cần RAM > 3GB khả dụng)</option>
                         </optgroup>
                     </select>
                 </div>
 
-                <div class="text-xs text-slate-400 bg-slate-950 p-3 rounded-xl border border-slate-800/80 leading-relaxed">
-                    <i class="fa-solid fa-circle-info text-emerald-400 mr-1"></i>
-                    Lần đầu chọn model trình duyệt sẽ cần tải file weight về Cache (IndexedDB). Từ lần thứ 2 sẽ load trực tiếp cực kỳ nhanh!
+                <div class="text-xs text-slate-400 bg-slate-950 p-3 rounded-xl border border-slate-800/80 leading-relaxed space-y-1">
+                    <p><i class="fa-solid fa-circle-info text-emerald-400 mr-1"></i> <strong>Lưu ý iOS (iPhone):</strong> Safari giới hạn RAM mỗi tab ở mức ~2.5GB. Các model >1.5B (Gemma 2B, Llama 3B) sẽ làm crash Safari do OOM (Out Of Memory).</p>
                 </div>
 
                 <div class="flex items-center gap-2 pt-1">
@@ -119,7 +116,7 @@
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4 flex-1 flex flex-col">
                 <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                     <h2 class="font-semibold text-sm uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                        <i class="fa-solid fa-newspaper"></i> 2. Chọn bài báo tóm tắt (10 RSS English)
+                        <i class="fa-solid fa-newspaper"></i> 2. Chọn bài báo tóm tắt
                     </h2>
                     <div class="flex items-center gap-2">
                         <button id="btn-select-all" class="text-xs text-emerald-400 hover:underline">Tất cả</button>
@@ -129,7 +126,7 @@
                 </div>
 
                 <!-- Articles Scroll List -->
-                <div id="articles-container" class="space-y-2 overflow-y-auto max-h-[320px] pr-1 flex-1">
+                <div id="articles-container" class="space-y-2 overflow-y-auto max-h-[280px] pr-1 flex-1">
                     <!-- Dynamic rendering via JS -->
                 </div>
 
@@ -139,13 +136,24 @@
                 </div>
             </div>
 
-            <!-- Execution Control Button -->
+            <!-- Parameters & Execution Control -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
                 <div class="flex items-center justify-between">
                     <label for="system-prompt" class="text-xs font-semibold text-slate-300">System Instruction / Prompt Yêu Cầu:</label>
                     <button id="btn-reset-prompt" class="text-[11px] text-slate-400 hover:text-emerald-400">Khôi phục mặc định</button>
                 </div>
-                <textarea id="system-prompt" rows="2" class="w-full bg-slate-950 border border-slate-700 text-slate-300 text-xs rounded-xl p-2.5 focus:ring-1 focus:ring-emerald-500 outline-none resize-none font-mono">Tóm tắt ngắn gọn các bản tin tin tức tiếng Anh dưới đây sang Tiếng Việt. Trình bày dạng các đầu dòng (bullet points) rõ ràng, dễ đọc.</textarea>
+                <textarea id="system-prompt" rows="2" class="w-full bg-slate-950 border border-slate-700 text-slate-300 text-xs rounded-xl p-2.5 focus:ring-1 focus:ring-emerald-500 outline-none resize-none font-mono">Bạn là trợ lý AI tóm tắt tin tức. Hãy đọc các bài báo sau và viết tóm tắt bằng Tiếng Việt ngắn gọn, đàng hoàng, trình bày dạng danh sách gạch đầu dòng (bullet points).</textarea>
+
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                        <label class="text-[11px] text-slate-400 block mb-1">Temperature: <span id="val-temp" class="text-emerald-400 font-mono">0.5</span></label>
+                        <input type="range" id="param-temp" min="0.1" max="1.0" step="0.1" value="0.5" class="w-full accent-emerald-500">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-slate-400 block mb-1">Repetition Penalty: <span id="val-rep" class="text-emerald-400 font-mono">1.15</span></label>
+                        <input type="range" id="param-rep" min="1.0" max="1.5" step="0.05" value="1.15" class="w-full accent-emerald-500">
+                    </div>
+                </div>
 
                 <div class="flex items-center gap-3 pt-2">
                     <button id="btn-run" class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-sm py-3 px-5 rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
@@ -173,8 +181,8 @@
                         <p class="text-[11px] text-slate-400 uppercase font-medium">Model Load Time</p>
                         <p id="stat-load-time" class="text-lg font-bold font-mono text-cyan-400 mt-1">0.00s</p>
                     </div>
-                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
-                        <p class="text-[11px] text-slate-400 uppercase font-medium">First Token (TTFT)</p>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80" title="Time To First Token (Bao gồm Shader Compilation & Prefill Context)">
+                        <p class="text-[11px] text-slate-400 uppercase font-medium">First Token (TTFT) ℹ️</p>
                         <p id="stat-ttft" class="text-lg font-bold font-mono text-amber-400 mt-1">0 ms</p>
                     </div>
                     <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
@@ -272,8 +280,8 @@
 
     <!-- Application Logic Script -->
     <script type="module">
-        // Import WebLLM package (v0.2.78+)
-        import * as webllm from "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.78/+esm";
+        // Updated WebLLM package to latest v0.2.85
+        import * as webllm from "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.85/+esm";
 
         // 10 Article Summaries in English (Tech / Science / AI)
         const ARTICLES = [
@@ -362,6 +370,10 @@
             selectedCount: document.getElementById('selected-count'),
             totalWordsEstimate: document.getElementById('total-words-estimate'),
             systemPrompt: document.getElementById('system-prompt'),
+            paramTemp: document.getElementById('param-temp'),
+            valTemp: document.getElementById('val-temp'),
+            paramRep: document.getElementById('param-rep'),
+            valRep: document.getElementById('val-rep'),
             btnResetPrompt: document.getElementById('btn-reset-prompt'),
             btnRun: document.getElementById('btn-run'),
             btnStop: document.getElementById('btn-stop'),
@@ -384,6 +396,10 @@
             modalBtnClose: document.getElementById('modal-btn-close')
         };
 
+        // Slider listeners
+        el.paramTemp.addEventListener('input', (e) => el.valTemp.textContent = e.target.value);
+        el.paramRep.addEventListener('input', (e) => el.valRep.textContent = e.target.value);
+
         // Custom Modal Alert
         function showAlert(title, message) {
             el.modalTitle.innerHTML = `<i class="fa-solid fa-circle-info text-emerald-400"></i> ${title}`;
@@ -400,7 +416,7 @@
             if (!navigator.gpu) {
                 el.gpuDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
                 el.gpuText.textContent = "WebGPU Không Hỗ Trợ";
-                showAlert("Cảnh Báo WebGPU", "Trình duyệt hoặc thiết bị của bạn chưa bật/hỗ trợ WebGPU. Hãy sử dụng Chrome/Edge/Safari bản mới nhất và bật phần cứng gia tốc (Hardware Acceleration).");
+                showAlert("Cảnh Báo WebGPU", "Trình duyệt chưa hỗ trợ WebGPU. Cần sử dụng Safari iOS 18+, Chrome/Edge v113+ và bật Hardware Acceleration.");
                 return false;
             }
             try {
@@ -413,7 +429,7 @@
             } catch (err) {
                 el.gpuDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
                 el.gpuText.textContent = "WebGPU Lỗi";
-                showAlert("WebGPU Adapter Error", "Thiết bị hỗ trợ WebGPU nhưng không kết nối được GPU Adapter. Vui lòng kiểm tra lại driver đồ họa.");
+                showAlert("WebGPU Adapter Error", "Không thể khởi tạo WebGPU Adapter.");
                 return false;
             }
         }
@@ -436,7 +452,6 @@
                 `;
             }).join('');
 
-            // Add Event Listeners to Checkboxes
             document.querySelectorAll('.article-checkbox').forEach(cb => {
                 cb.addEventListener('change', (e) => {
                     const id = parseInt(e.target.value);
@@ -477,10 +492,10 @@
             el.modelSizeBadge.textContent = selectedOpt.dataset.size || '';
         });
 
-        // WebLLM Engine Loading Function with Dynamic Fallback for appConfig
+        // WebLLM Engine Loading Function
         async function loadWebLLMEngine(selectedModel) {
             if (engine && currentModel === selectedModel) {
-                return engine; // Already initialized
+                return engine;
             }
 
             isEngineLoading = true;
@@ -505,14 +520,10 @@
                     initProgressCallback: initProgressCallback
                 };
 
-                // Check if selectedModel exists in prebuiltAppConfig.model_list
                 const prebuiltList = webllm.prebuiltAppConfig?.model_list || [];
                 const isPrebuilt = prebuiltList.some(m => m.model_id === selectedModel);
 
-                // If not found in default prebuilt catalog, dynamically add a custom model record
                 if (!isPrebuilt) {
-                    console.warn(`Model ${selectedModel} is not in standard prebuiltAppConfig, appending custom record.`);
-                    
                     const customModelRecord = {
                         model: `https://huggingface.co/mlc-ai/${selectedModel}`,
                         model_id: selectedModel,
@@ -566,41 +577,40 @@
 
             const modelName = el.modelSelect.value;
             const systemPrompt = el.systemPrompt.value.trim();
+            const tempVal = parseFloat(el.paramTemp.value);
+            const repVal = parseFloat(el.paramRep.value);
 
-            // Reset UI States
             isGenerating = true;
             el.btnRun.disabled = true;
             el.btnStop.disabled = false;
             el.btnCopy.disabled = true;
-            el.outputText.innerHTML = '<span class="text-amber-400 animate-pulse"><i class="fa-solid fa-spinner fa-spin"></i> Đang chuẩn bị prompt và gửi đến WebGPU Model...</span>';
+            el.outputText.innerHTML = '<span class="text-amber-400 animate-pulse"><i class="fa-solid fa-spinner fa-spin"></i> Đang compile WebGPU Shader & xử lý Prefill Context (TTFT)...</span>';
             el.statTtft.textContent = "0 ms";
             el.statSpeed.textContent = "0.0 tok/s";
             el.statTokens.textContent = "0 tokens";
 
             try {
-                // Ensure engine loaded
                 const eng = await loadWebLLMEngine(modelName);
 
-                // Build Input Text Prompt
                 const selectedArticles = ARTICLES.filter(a => selectedArticleIds.has(a.id));
-                let combinedArticlesText = selectedArticles.map((a, idx) => `[Article ${idx + 1}: ${a.title}]\n${a.content}`).join("\n\n");
+                let combinedArticlesText = selectedArticles.map((a, idx) => `[Tin ${idx + 1}: ${a.title}]\n${a.content}`).join("\n\n");
 
                 const messages = [
                     { role: "system", content: systemPrompt },
-                    { role: "user", content: `Dưới đây là ${selectedArticles.length} bản tin ngắn. Hãy tóm tắt lại bằng tiếng Việt:\n\n${combinedArticlesText}` }
+                    { role: "user", content: `Nội dung ${selectedArticles.length} bài báo cần tóm tắt:\n\n${combinedArticlesText}` }
                 ];
 
-                // Performance Metrics Trackers
                 const genStartTime = performance.now();
                 let firstTokenTime = null;
                 let generatedTokensCount = 0;
                 let fullTextOutput = "";
 
-                // Stream completions
+                // Stream completions with custom sampling parameters
                 const completion = await eng.chat.completions.create({
                     messages: messages,
                     stream: true,
-                    temperature: 0.3,
+                    temperature: tempVal,
+                    repetition_penalty: repVal,
                     max_tokens: 1024
                 });
 
@@ -621,10 +631,8 @@
                         generatedTokensCount++;
                         el.outputText.textContent = fullTextOutput;
 
-                        // Auto scroll
                         el.outputText.parentElement.scrollTop = el.outputText.parentElement.scrollHeight;
 
-                        // Calculate live speed
                         const elapsedTimeSec = (performance.now() - firstTokenTime) / 1000;
                         if (elapsedTimeSec > 0) {
                             const speed = (generatedTokensCount / elapsedTimeSec).toFixed(1);
@@ -636,7 +644,6 @@
 
                 el.btnCopy.disabled = false;
 
-                // Save to history benchmark log
                 const totalGenDuration = firstTokenTime ? ((performance.now() - firstTokenTime) / 1000) : 0;
                 const finalSpeed = totalGenDuration > 0 ? (generatedTokensCount / totalGenDuration).toFixed(1) : 0;
 
@@ -660,18 +667,16 @@
             }
         }
 
-        // Stop Generation Button
+        // Stop Button
         el.btnStop.addEventListener('click', () => {
             isGenerating = false;
-            el.outputText.innerHTML += '\n\n<span class="text-amber-400 font-bold">[Đã dừng sinh văn bản bởi người dùng]</span>';
+            el.outputText.innerHTML += '\n\n<span class="text-amber-400 font-bold">[Đã dừng bởi người dùng]</span>';
             el.btnStop.disabled = true;
             el.btnRun.disabled = false;
         });
 
-        // Run Button
         el.btnRun.addEventListener('click', runBenchmark);
 
-        // Copy Button
         el.btnCopy.addEventListener('click', () => {
             const text = el.outputText.textContent;
             if (!text) return;
@@ -682,36 +687,36 @@
             });
         });
 
-        // Clear Output
         el.btnClearOut.addEventListener('click', () => {
-            el.outputText.innerHTML = '<p class="text-slate-500 italic text-xs">Đã xóa kết quả. Bấm nút "BẮT ĐẦU TÓM TẮT" để sinh lại...</p>';
+            el.outputText.innerHTML = '<p class="text-slate-500 italic text-xs">Đã xóa kết quả. Bấm "BẮT ĐẦU TÓM TẮT" để thử lại...</p>';
             el.btnCopy.disabled = true;
             el.statTtft.textContent = "0 ms";
             el.statSpeed.textContent = "0.0 tok/s";
             el.statTokens.textContent = "0 tokens";
         });
 
-        // Reset Prompt Button
         el.btnResetPrompt.addEventListener('click', () => {
-            el.systemPrompt.value = "Tóm tắt ngắn gọn các bản tin tin tức tiếng Anh dưới đây sang Tiếng Việt. Trình bày dạng các đầu dòng (bullet points) rõ ràng, dễ đọc.";
+            el.systemPrompt.value = "Bạn là trợ lý AI tóm tắt tin tức. Hãy đọc các bài báo sau và viết tóm tắt bằng Tiếng Việt ngắn gọn, đàng hoàng, trình bày dạng danh sách gạch đầu dòng (bullet points).";
+            el.paramTemp.value = 0.5;
+            el.paramRep.value = 1.15;
+            el.valTemp.textContent = "0.5";
+            el.valRep.textContent = "1.15";
         });
 
-        // Clear Cache Button
         el.btnClearCache.addEventListener('click', async () => {
-            if (confirm("Xóa toàn bộ model weights đã lưu trong browser cache (IndexedDB)?")) {
+            if (confirm("Xóa toàn bộ model weights trong IndexedDB cache?")) {
                 try {
                     if (window.indexedDB) {
                         const dbs = await window.indexedDB.databases();
                         dbs.forEach(db => window.indexedDB.deleteDatabase(db.name));
                     }
-                    showAlert("Thành Công", "Đã xóa toàn bộ Cache Model. Trình duyệt sẽ tải lại file khi chạy lần sau.");
+                    showAlert("Thành Công", "Đã xóa Cache Model.");
                 } catch (e) {
-                    showAlert("Lỗi", "Không thể tự động xóa Cache. Bạn có thể xóa thủ công trong DevTools -> Application -> Storage.");
+                    showAlert("Lỗi", "Không thể tự động xóa Cache.");
                 }
             }
         });
 
-        // Benchmark Log Table Functions
         function addBenchmarkLog(log) {
             benchmarkLogs.unshift(log);
             renderBenchmarkLogs();
@@ -739,7 +744,6 @@
             renderBenchmarkLogs();
         });
 
-        // App Load Init
         window.addEventListener('DOMContentLoaded', async () => {
             renderArticles();
             await checkWebGPUSupport();
