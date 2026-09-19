@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGPU Local AI Benchmarker & Summarizer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        code, pre { font-family: 'JetBrains Mono', monospace; }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-slate-950">
+
+    <!-- Top Header Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 font-bold text-xl">
+                    <i class="fa-solid font-mono">⚡</i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
+                        WebGPU AI Benchmarker
+                        <span class="text-xs font-mono font-normal px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">100% In-Browser</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Tóm tắt bản tin bằng Model Local chạy trực tiếp qua WebGPU/WASM</p>
+                </div>
+            </div>
+
+            <!-- WebGPU Status Pill & Global Tools -->
+            <div class="flex items-center gap-3">
+                <div id="webgpu-status" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-mono">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" id="gpu-dot"></span>
+                    <span id="gpu-text" class="text-slate-300">Checking WebGPU...</span>
+                </div>
+                <button id="btn-clear-cache" title="Xóa cache model trong Web Storage" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-300 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-trash-can text-slate-400"></i> Clear Model Cache
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Controls Column (4 cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Model Picker Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 class="font-semibold text-sm uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                        <i class="fa-solid fa-microchip"></i> 1. Chọn Local Model (WebLLM)
+                    </h2>
+                    <span class="text-xs text-slate-400 font-mono" id="model-size-badge">~350 MB</span>
+                </div>
+
+                <div class="space-y-2">
+                    <label for="model-select" class="text-xs font-medium text-slate-300">Danh sách Model có sẵn:</label>
+                    <select id="model-select" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-sm rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition font-sans">
+                        <optgroup label="🟢 Siêu nhẹ (Khuyên dùng cho Điện thoại)">
+                            <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" data-size="~350 MB" selected>Qwen 2.5 - 0.5B (Cực nhanh, tiếng Việt tốt)</option>
+                            <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC" data-size="~700 MB">Llama 3.2 - 1B (Nhẹ nhàng, cân bằng)</option>
+                        </optgroup>
+                        <optgroup label="🟡 Vừa phải (Cho Laptop / ĐT Cấu hình mạnh)">
+                            <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" data-size="~980 MB">Qwen 2.5 - 1.5B (Độ chính xác cao hơn)</option>
+                            <option value="SmolLM2-1.7B-Instruct-q4f16_1-MLC" data-size="~1.0 GB">SmolLM2 - 1.7B (Cấu trúc tối ưu gọn nhẹ)</option>
+                            <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC" data-size="~1.8 GB">Llama 3.2 - 3B (Suy luận tốt, ngốn RAM vừa)</option>
+                        </optgroup>
+                        <optgroup label="🔴 Nặng (Chỉ nên xài trên PC / Card rời)">
+                            <option value="Qwen2.5-7B-Instruct-q4f16_1-MLC" data-size="~4.3 GB">Qwen 2.5 - 7B (Nặng, chất lượng đỉnh cao)</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="text-xs text-slate-400 bg-slate-950 p-3 rounded-xl border border-slate-800/80 leading-relaxed">
+                    <i class="fa-solid fa-circle-info text-emerald-400 mr-1"></i>
+                    Lần đầu chọn model trình duyệt sẽ cần tải file weight về IndexedDB. Từ lần thứ 2 sẽ load trực tiếp từ cache máy cực kỳ nhanh!
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                    <button id="btn-load-model" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium text-xs py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i> Tải / Khởi tạo Model trước
+                    </button>
+                </div>
+            </div>
+
+            <!-- Articles Selector Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4 flex-1 flex flex-col">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 class="font-semibold text-sm uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                        <i class="fa-solid fa-newspaper"></i> 2. Chọn bài báo tóm tắt (10 RSS English)
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-select-all" class="text-xs text-emerald-400 hover:underline">Tất cả</button>
+                        <span class="text-slate-600">|</span>
+                        <button id="btn-deselect-all" class="text-xs text-slate-400 hover:underline">Bỏ chọn</button>
+                    </div>
+                </div>
+
+                <!-- Articles Scroll List -->
+                <div id="articles-container" class="space-y-2 overflow-y-auto max-h-[320px] pr-1 flex-1">
+                    <!-- Dynamic rendering via JS -->
+                </div>
+
+                <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span>Đã chọn: <strong id="selected-count" class="text-emerald-400 font-mono">10</strong>/10 bài</span>
+                    <span id="total-words-estimate" class="font-mono">~650 words</span>
+                </div>
+            </div>
+
+            <!-- Execution Control Button -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+                <div class="flex items-center justify-between">
+                    <label for="system-prompt" class="text-xs font-semibold text-slate-300">System Instruction / Prompt Yêu Cầu:</label>
+                    <button id="btn-reset-prompt" class="text-[11px] text-slate-400 hover:text-emerald-400">Khôi phục mặc định</button>
+                </div>
+                <textarea id="system-prompt" rows="2" class="w-full bg-slate-950 border border-slate-700 text-slate-300 text-xs rounded-xl p-2.5 focus:ring-1 focus:ring-emerald-500 outline-none resize-none font-mono">Tóm tắt ngắn gọn các bản tin tin tức tiếng Anh dưới đây sang Tiếng Việt. Trình bày dạng các đầu dòng (bullet points) rõ ràng, dễ đọc.</textarea>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <button id="btn-run" class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-sm py-3 px-5 rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play"></i> BẮT ĐẦU TÓM TẮT & BENCHMARK
+                    </button>
+                    <button id="btn-stop" disabled class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 disabled:opacity-40 font-semibold text-xs py-3 px-4 rounded-xl transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-stop"></i> Dừng
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Output & Stats Column (7 cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+
+            <!-- Real-time Benchmark Metrics Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <h2 class="font-semibold text-sm uppercase tracking-wider text-emerald-400 flex items-center gap-2 border-b border-slate-800 pb-3">
+                    <i class="fa-solid fa-gauge-high"></i> Benchmark Real-Time Metrics
+                </h2>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <p class="text-[11px] text-slate-400 uppercase font-medium">Model Load Time</p>
+                        <p id="stat-load-time" class="text-lg font-bold font-mono text-cyan-400 mt-1">0.00s</p>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <p class="text-[11px] text-slate-400 uppercase font-medium">First Token (TTFT)</p>
+                        <p id="stat-ttft" class="text-lg font-bold font-mono text-amber-400 mt-1">0 ms</p>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <p class="text-[11px] text-slate-400 uppercase font-medium">Speed (Tokens/s)</p>
+                        <p id="stat-speed" class="text-xl font-extrabold font-mono text-emerald-400 mt-1">0.0 tok/s</p>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <p class="text-[11px] text-slate-400 uppercase font-medium">Total Generated</p>
+                        <p id="stat-tokens" class="text-lg font-bold font-mono text-indigo-400 mt-1">0 tokens</p>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div id="progress-wrapper" class="space-y-1.5 hidden">
+                    <div class="flex justify-between text-xs font-mono">
+                        <span id="progress-text" class="text-slate-300">Loading model...</span>
+                        <span id="progress-percent" class="text-emerald-400">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-slate-800">
+                        <div id="progress-bar" class="bg-gradient-to-r from-emerald-500 to-cyan-500 h-full w-0 transition-all duration-200"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Streaming Output Box -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex-1 flex flex-col min-h-[380px]">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 class="font-semibold text-sm uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice"></i> Kết quả tổng hợp (Vietnamese Output)
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-copy" disabled class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition disabled:opacity-40 flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i> Copy
+                        </button>
+                        <button id="btn-clear-out" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition flex items-center gap-1">
+                            <i class="fa-solid fa-eraser"></i> Xóa
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Stream Output Area -->
+                <div class="mt-4 flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-y-auto max-h-[450px]">
+                    <div id="output-text" class="text-sm text-slate-200 leading-relaxed space-y-3 whitespace-pre-wrap font-sans">
+                        <p class="text-slate-500 italic text-xs">Bấm nút "BẮT ĐẦU TÓM TẮT & BENCHMARK" để tải model và sinh kết quả ở đây...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benchmark History Table -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check"></i> Lịch Sử Test Benchmark Các Model
+                    </h3>
+                    <button id="btn-clear-history" class="text-[11px] text-slate-500 hover:text-slate-300">Clear Logs</button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead>
+                            <tr class="text-slate-400 border-b border-slate-800">
+                                <th class="pb-2 font-medium">Model</th>
+                                <th class="pb-2 font-medium">Load Time</th>
+                                <th class="pb-2 font-medium">TTFT</th>
+                                <th class="pb-2 font-medium">Speed</th>
+                                <th class="pb-2 font-medium">Tokens</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-tbody" class="divide-y divide-slate-800/60 text-slate-300">
+                            <tr>
+                                <td colspan="5" class="py-3 text-center text-slate-500 italic font-sans">Chưa có dữ liệu benchmark nào.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Custom Modal Dialog (Replacing browser alerts) -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 id="modal-title" class="font-bold text-lg text-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Thông Báo
+            </h3>
+            <p id="modal-message" class="text-sm text-slate-300 leading-relaxed">Nội dung thông báo...</p>
+            <div class="flex justify-end pt-2">
+                <button id="modal-btn-close" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl transition">
+                    Đã hiểu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic Script -->
+    <script type="module">
+        import * as webllm from "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.70/+esm";
+
+        // 10 Article Summaries in English (Tech / Science / AI)
+        const ARTICLES = [
+            {
+                id: 1,
+                title: "OpenAI Launches Next-Gen Reasoning Model Family",
+                category: "AI Technology",
+                content: "OpenAI announced a new series of AI reasoning models designed to spend more time thinking before responding. These models excel at complex scientific reasoning, code debugging, and advanced mathematics, achieving human PhD-level benchmarks in chemistry and physics evaluations."
+            },
+            {
+                id: 2,
+                title: "Breakthrough Solid-State Battery Achieves 10-Minute Ultra-Fast Charge",
+                category: "Clean Tech",
+                content: "Engineers at MIT developed a novel ceramic electrolyte for solid-state lithium batteries. The new battery architecture maintains 90% capacity after 2,000 cycles and supports ultra-fast charging to 80% in under 10 minutes without dangerous dendrite short-circuiting."
+            },
+            {
+                id: 3,
+                title: "James Webb Telescope Detects Water Vapor on Earth-Sized Exoplanet",
+                category: "Astronomy",
+                content: "Astronomers utilizing the James Webb Space Telescope observed atmospheric absorption lines confirming water vapor on TRAPPIST-1e. This represents the first definitive atmospheric constituent detected on a terrestrial rocky planet located in a star's habitable orbit."
+            },
+            {
+                id: 4,
+                title: "Global Renewable Capacity Jumps 45% Driven by Solar Surges",
+                category: "Energy",
+                content: "The International Energy Agency reported a historic 45% global increase in solar and wind power installations over the past year. Falling photovoltaic manufacturing costs and aggressive offshore wind farm expansions in Asia and Europe spearheaded the record transition."
+            },
+            {
+                id: 5,
+                title: "Fault-Tolerant Quantum Processor Reaches 99.9% Logical Qubit Fidelity",
+                category: "Quantum Computing",
+                content: "Quantum researchers demonstrated physical qubit operations reaching 99.9% gate fidelity using topological error correction codes. The prototype maintained coherent computation across 10,000 sequential gates, bringing commercial fault-tolerant quantum algorithms significantly closer."
+            },
+            {
+                id: 6,
+                title: "Liquid Microfluidic Channels Built Directly Inside Silicon Microchips",
+                category: "Hardware",
+                content: "Semiconductor engineers successfully etched micro-fluidic cooling channels directly into silicon processor dies. This direct-chip cooling method reduces operating temperatures by 25°C under intensive AI matrix workloads, vastly extending chip longevity and energy efficiency."
+            },
+            {
+                id: 7,
+                title: "FDA Grants Full Approval for First CRISPR Gene-Editing Cure",
+                category: "Biotech",
+                content: "Health regulators granted full approval for exa-cel, a groundbreaking CRISPR gene editing therapy for severe sickle cell disease. By editing patient hematopoietic stem cells, the single-dose treatment permanently halts painful vaso-occlusive crises."
+            },
+            {
+                id: 8,
+                title: "Humanoid Industrial Robots Enter Pilot Production Lines in Auto Factories",
+                category: "Robotics",
+                content: "Automotive manufacturers initiated pilot integration of general-purpose autonomous humanoid robots into vehicle assembly plants. Equipped with neural vision models and tactile feedback, the robots perform delicate wiring harness and parts logistics tasks."
+            },
+            {
+                id: 9,
+                title: "Direct Air Capture Plant Reaches 50 Million Ton Atmospheric Storage Milestone",
+                category: "Environment",
+                content: "A major direct air capture facility in Iceland permanently trapped over 50 million metric tons of atmospheric CO2 in basalt rock. The facility dissolves captured carbon in geothermal water and injects it deep underground where it turns into stone within two years."
+            },
+            {
+                id: 10,
+                title: "Brain-Computer Interface Restores Speech at 90 Words Per Minute",
+                category: "Neuroscience",
+                content: "Neuroscientists deployed a high-density cortical brain implant coupled with recurrent deep learning decoders on a paralyzed patient with ALS. The system translated imagined handwriting and spoken thoughts into text and synthetic speech in real-time at 90 words per minute."
+            }
+        ];
+
+        // App State
+        let engine = null;
+        let currentModel = "";
+        let isEngineLoading = false;
+        let isGenerating = false;
+        let benchmarkLogs = [];
+        let selectedArticleIds = new Set(ARTICLES.map(a => a.id));
+
+        // DOM Element Cache
+        const el = {
+            webgpuStatus: document.getElementById('webgpu-status'),
+            gpuDot: document.getElementById('gpu-dot'),
+            gpuText: document.getElementById('gpu-text'),
+            btnClearCache: document.getElementById('btn-clear-cache'),
+            modelSelect: document.getElementById('model-select'),
+            modelSizeBadge: document.getElementById('model-size-badge'),
+            btnLoadModel: document.getElementById('btn-load-model'),
+            articlesContainer: document.getElementById('articles-container'),
+            btnSelectAll: document.getElementById('btn-select-all'),
+            btnDeselectAll: document.getElementById('btn-deselect-all'),
+            selectedCount: document.getElementById('selected-count'),
+            totalWordsEstimate: document.getElementById('total-words-estimate'),
+            systemPrompt: document.getElementById('system-prompt'),
+            btnResetPrompt: document.getElementById('btn-reset-prompt'),
+            btnRun: document.getElementById('btn-run'),
+            btnStop: document.getElementById('btn-stop'),
+            statLoadTime: document.getElementById('stat-load-time'),
+            statTtft: document.getElementById('stat-ttft'),
+            statSpeed: document.getElementById('stat-speed'),
+            statTokens: document.getElementById('stat-tokens'),
+            progressWrapper: document.getElementById('progress-wrapper'),
+            progressText: document.getElementById('progress-text'),
+            progressPercent: document.getElementById('progress-percent'),
+            progressBar: document.getElementById('progress-bar'),
+            outputText: document.getElementById('output-text'),
+            btnCopy: document.getElementById('btn-copy'),
+            btnClearOut: document.getElementById('btn-clear-out'),
+            historyTbody: document.getElementById('history-tbody'),
+            btnClearHistory: document.getElementById('btn-clear-history'),
+            modalBackdrop: document.getElementById('modal-backdrop'),
+            modalTitle: document.getElementById('modal-title'),
+            modalMessage: document.getElementById('modal-message'),
+            modalBtnClose: document.getElementById('modal-btn-close')
+        };
+
+        // Helper: Custom Modal Alert
+        function showAlert(title, message) {
+            el.modalTitle.innerHTML = `<i class="fa-solid fa-circle-info text-emerald-400"></i> ${title}`;
+            el.modalMessage.textContent = message;
+            el.modalBackdrop.classList.remove('hidden');
+        }
+
+        el.modalBtnClose.addEventListener('click', () => {
+            el.modalBackdrop.classList.add('hidden');
+        });
+
+        // Check WebGPU Support
+        async function checkWebGPUSupport() {
+            if (!navigator.gpu) {
+                el.gpuDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+                el.gpuText.textContent = "WebGPU Không Hỗ Trợ";
+                showAlert("Cảnh Báo WebGPU", "Trình duyệt hoặc thiết bị của bạn chưa bật/hỗ trợ WebGPU. Hãy sử dụng Chrome/Edge/Safari bản mới nhất và bật phần cứng gia tốc (Hardware Acceleration).");
+                return false;
+            }
+            try {
+                const adapter = await navigator.gpu.requestAdapter();
+                if (!adapter) throw new Error("Không lấy được GPU Adapter");
+                
+                el.gpuDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+                el.gpuText.textContent = "WebGPU Ready";
+                return true;
+            } catch (err) {
+                el.gpuDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+                el.gpuText.textContent = "WebGPU Lỗi";
+                showAlert("WebGPU Adapter Error", "Thiết bị hỗ trợ WebGPU nhưng không kết nối được GPU Adapter. Vui lòng kiểm tra lại driver đồ họa.");
+                return false;
+            }
+        }
+
+        // Render Article Checklist UI
+        function renderArticles() {
+            el.articlesContainer.innerHTML = ARTICLES.map(art => {
+                const checked = selectedArticleIds.has(art.id) ? 'checked' : '';
+                return `
+                    <label class="flex items-start gap-3 p-2.5 bg-slate-950/70 border border-slate-800 hover:border-slate-700 rounded-xl cursor-pointer transition group">
+                        <input type="checkbox" value="${art.id}" ${checked} class="article-checkbox mt-1 w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-700 focus:ring-emerald-500 focus:ring-offset-slate-950">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-xs font-semibold text-slate-200 group-hover:text-emerald-400 truncate">${art.title}</span>
+                                <span class="text-[10px] font-mono px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded">${art.category}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 line-clamp-1 mt-0.5">${art.content}</p>
+                        </div>
+                    </label>
+                `;
+            }).join('');
+
+            // Add Event Listeners to Checkboxes
+            document.querySelectorAll('.article-checkbox').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    const id = parseInt(e.target.value);
+                    if (e.target.checked) selectedArticleIds.add(id);
+                    else selectedArticleIds.delete(id);
+                    updateArticleCount();
+                });
+            });
+
+            updateArticleCount();
+        }
+
+        function updateArticleCount() {
+            const count = selectedArticleIds.size;
+            el.selectedCount.textContent = count;
+            
+            // Calculate word count estimate
+            let totalWords = 0;
+            ARTICLES.filter(a => selectedArticleIds.has(a.id)).forEach(a => {
+                totalWords += a.content.split(/\s+/).length;
+            });
+            el.totalWordsEstimate.textContent = `~${totalWords} từ`;
+        }
+
+        // Handle Select/Deselect All Buttons
+        el.btnSelectAll.addEventListener('click', () => {
+            ARTICLES.forEach(a => selectedArticleIds.add(a.id));
+            renderArticles();
+        });
+
+        el.btnDeselectAll.addEventListener('click', () => {
+            selectedArticleIds.clear();
+            renderArticles();
+        });
+
+        // Update Size Badge on Model Change
+        el.modelSelect.addEventListener('change', (e) => {
+            const selectedOpt = e.target.options[e.target.selectedIndex];
+            el.modelSizeBadge.textContent = selectedOpt.dataset.size || '';
+        });
+
+        // WebLLM Engine Loading Function
+        async function loadWebLLMEngine(selectedModel) {
+            if (engine && currentModel === selectedModel) {
+                return engine; // Already initialized
+            }
+
+            isEngineLoading = true;
+            el.btnLoadModel.disabled = true;
+            el.btnRun.disabled = true;
+            el.progressWrapper.classList.remove('hidden');
+            el.progressText.textContent = "Đang kết nối & tải weights...";
+            el.progressBar.style.width = '0%';
+            el.progressPercent.textContent = '0%';
+
+            const startTime = performance.now();
+
+            const initProgressCallback = (report) => {
+                const pct = Math.round((report.progress || 0) * 100);
+                el.progressBar.style.width = `${pct}%`;
+                el.progressPercent.textContent = `${pct}%`;
+                el.progressText.textContent = report.text || "Loading...";
+            };
+
+            try {
+                // Initialize webllm MLCEngine directly using WebLLM prebuilt catalog
+                const engineOptions = {
+                    initProgressCallback: initProgressCallback
+                };
+
+                engine = await webllm.CreateMLCEngine(selectedModel, engineOptions);
+
+                currentModel = selectedModel;
+                const loadDuration = ((performance.now() - startTime) / 1000).toFixed(2);
+                el.statLoadTime.textContent = `${loadDuration}s`;
+
+                el.progressText.textContent = "Khởi tạo thành công!";
+                setTimeout(() => el.progressWrapper.classList.add('hidden'), 1500);
+
+                return engine;
+            } catch (err) {
+                console.error(err);
+                showAlert("Lỗi Tải Model", `Không thể khởi tạo ${selectedModel}. Chi tiết: ${err.message || err}`);
+                el.progressWrapper.classList.add('hidden');
+                throw err;
+            } finally {
+                isEngineLoading = false;
+                el.btnLoadModel.disabled = false;
+                el.btnRun.disabled = false;
+            }
+        }
+
+        el.btnLoadModel.addEventListener('click', async () => {
+            const model = el.modelSelect.value;
+            try {
+                await loadWebLLMEngine(model);
+                showAlert("Thành Công", `Model ${model} đã sẵn sàng trong RAM WebGPU!`);
+            } catch (e) {}
+        });
+
+        // Execute Summarization Benchmark Task
+        async function runBenchmark() {
+            if (selectedArticleIds.size === 0) {
+                showAlert("Chưa Chọn Bài Báo", "Vui lòng chọn ít nhất 1 bài báo để bắt đầu tóm tắt.");
+                return;
+            }
+
+            const modelName = el.modelSelect.value;
+            const systemPrompt = el.systemPrompt.value.trim();
+
+            // Reset UI States
+            isGenerating = true;
+            el.btnRun.disabled = true;
+            el.btnStop.disabled = false;
+            el.btnCopy.disabled = true;
+            el.outputText.innerHTML = '<span class="text-amber-400 animate-pulse"><i class="fa-solid fa-spinner fa-spin"></i> Đang chuẩn bị prompt và gửi đến WebGPU Model...</span>';
+            el.statTtft.textContent = "0 ms";
+            el.statSpeed.textContent = "0.0 tok/s";
+            el.statTokens.textContent = "0 tokens";
+
+            try {
+                // Ensure model is loaded
+                const eng = await loadWebLLMEngine(modelName);
+
+                // Build Input Text Prompt
+                const selectedArticles = ARTICLES.filter(a => selectedArticleIds.has(a.id));
+                let combinedArticlesText = selectedArticles.map((a, idx) => `[Article ${idx + 1}: ${a.title}]\n${a.content}`).join("\n\n");
+
+                const messages = [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: `Dưới đây là ${selectedArticles.length} bản tin ngắn. Hãy tóm tắt lại bằng tiếng Việt:\n\n${combinedArticlesText}` }
+                ];
+
+                // Performance Metrics Trackers
+                const genStartTime = performance.now();
+                let firstTokenTime = null;
+                let generatedTokensCount = 0;
+                let fullTextOutput = "";
+
+                // Stream completions
+                const completion = await eng.chat.completions.create({
+                    messages: messages,
+                    stream: true,
+                    temperature: 0.3,
+                    max_tokens: 1024
+                });
+
+                el.outputText.textContent = ""; // Clear loader text
+
+                for await (const chunk of completion) {
+                    if (!isGenerating) break; // Interrupted by stop button
+
+                    const textChunk = chunk.choices[0]?.delta?.content || "";
+                    if (textChunk) {
+                        if (!firstTokenTime) {
+                            firstTokenTime = performance.now();
+                            const ttftMs = Math.round(firstTokenTime - genStartTime);
+                            el.statTtft.textContent = `${ttftMs} ms`;
+                        }
+
+                        fullTextOutput += textChunk;
+                        generatedTokensCount++;
+                        el.outputText.textContent = fullTextOutput;
+
+                        // Scroll output down automatically
+                        el.outputText.parentElement.scrollTop = el.outputText.parentElement.scrollHeight;
+
+                        // Calculate live speed
+                        const elapsedTimeSec = (performance.now() - firstTokenTime) / 1000;
+                        if (elapsedTimeSec > 0) {
+                            const speed = (generatedTokensCount / elapsedTimeSec).toFixed(1);
+                            el.statSpeed.textContent = `${speed} tok/s`;
+                        }
+                        el.statTokens.textContent = `${generatedTokensCount} tokens`;
+                    }
+                }
+
+                el.btnCopy.disabled = false;
+
+                // Save to history benchmark log
+                const totalGenDuration = firstTokenTime ? ((performance.now() - firstTokenTime) / 1000) : 0;
+                const finalSpeed = totalGenDuration > 0 ? (generatedTokensCount / totalGenDuration).toFixed(1) : 0;
+
+                addBenchmarkLog({
+                    model: modelName.split('-MLC')[0],
+                    loadTime: el.statLoadTime.textContent,
+                    ttft: el.statTtft.textContent,
+                    speed: `${finalSpeed} tok/s`,
+                    tokens: generatedTokensCount
+                });
+
+            } catch (err) {
+                console.error(err);
+                if (isGenerating) {
+                    el.outputText.innerHTML = `<span class="text-rose-400">❌ Lỗi xảy ra: ${err.message || err}</span>`;
+                }
+            } finally {
+                isGenerating = false;
+                el.btnRun.disabled = false;
+                el.btnStop.disabled = true;
+            }
+        }
+
+        // Stop Generation Button
+        el.btnStop.addEventListener('click', () => {
+            isGenerating = false;
+            el.outputText.innerHTML += '\n\n<span class="text-amber-400 font-bold">[Đã dừng sinh văn bản bởi người dùng]</span>';
+            el.btnStop.disabled = true;
+            el.btnRun.disabled = false;
+        });
+
+        // Run Button
+        el.btnRun.addEventListener('click', runBenchmark);
+
+        // Copy Button
+        el.btnCopy.addEventListener('click', () => {
+            const text = el.outputText.textContent;
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = el.btnCopy.innerHTML;
+                el.btnCopy.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> Copied!`;
+                setTimeout(() => el.btnCopy.innerHTML = originalText, 2000);
+            });
+        });
+
+        // Clear Output
+        el.btnClearOut.addEventListener('click', () => {
+            el.outputText.innerHTML = '<p class="text-slate-500 italic text-xs">Đã xóa kết quả. Bấm nút "BẮT ĐẦU TÓM TẮT" để sinh lại...</p>';
+            el.btnCopy.disabled = true;
+            el.statTtft.textContent = "0 ms";
+            el.statSpeed.textContent = "0.0 tok/s";
+            el.statTokens.textContent = "0 tokens";
+        });
+
+        // Reset Prompt Button
+        el.btnResetPrompt.addEventListener('click', () => {
+            el.systemPrompt.value = "Tóm tắt ngắn gọn các bản tin tin tức tiếng Anh dưới đây sang Tiếng Việt. Trình bày dạng các đầu dòng (bullet points) rõ ràng, dễ đọc.";
+        });
+
+        // Clear Cache Button
+        el.btnClearCache.addEventListener('click', async () => {
+            if (confirm("Xóa toàn bộ model weights đã lưu trong browser cache (IndexedDB)?")) {
+                try {
+                    if (window.indexedDB) {
+                        const dbs = await window.indexedDB.databases();
+                        dbs.forEach(db => window.indexedDB.deleteDatabase(db.name));
+                    }
+                    showAlert("Thành Công", "Đã xóa toàn bộ Cache Model. Trình duyệt sẽ tải lại file khi chạy lần sau.");
+                } catch (e) {
+                    showAlert("Lỗi", "Không thể tự động xóa Cache. Bạn có thể xóa thủ công trong DevTools -> Application -> Storage.");
+                }
+            }
+        });
+
+        // Benchmark Log Table Functions
+        function addBenchmarkLog(log) {
+            benchmarkLogs.unshift(log);
+            renderBenchmarkLogs();
+        }
+
+        function renderBenchmarkLogs() {
+            if (benchmarkLogs.length === 0) {
+                el.historyTbody.innerHTML = `<tr><td colspan="5" class="py-3 text-center text-slate-500 italic font-sans">Chưa có dữ liệu benchmark nào.</td></tr>`;
+                return;
+            }
+
+            el.historyTbody.innerHTML = benchmarkLogs.map(log => `
+                <tr class="hover:bg-slate-800/40 transition">
+                    <td class="py-2 font-bold text-emerald-400 truncate max-w-[140px]" title="${log.model}">${log.model}</td>
+                    <td class="py-2 text-slate-300">${log.loadTime}</td>
+                    <td class="py-2 text-amber-300">${log.ttft}</td>
+                    <td class="py-2 text-cyan-300 font-bold">${log.speed}</td>
+                    <td class="py-2 text-slate-400">${log.tokens}</td>
+                </tr>
+            `).join('');
+        }
+
+        el.btnClearHistory.addEventListener('click', () => {
+            benchmarkLogs = [];
+            renderBenchmarkLogs();
+        });
+
+        // App Load Init
+        window.addEventListener('DOMContentLoaded', async () => {
+            renderArticles();
+            await checkWebGPUSupport();
+
+            // Populate / verify models with WebLLM prebuilt catalog
+            if (webllm.prebuiltAppConfig && webllm.prebuiltAppConfig.model_list) {
+                const availableIds = new Set(webllm.prebuiltAppConfig.model_list.map(m => m.model_id));
+                const options = el.modelSelect.options;
+                for (let i = 0; i < options.length; i++) {
+                    if (!availableIds.has(options[i].value)) {
+                        console.info(`Model ${options[i].value} not in default prebuilt bundle, WebLLM will attempt dynamic load.`);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
