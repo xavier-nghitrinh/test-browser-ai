@@ -72,7 +72,7 @@
     <!-- Main App Container -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        <!-- Left Controls Column (4 cols) -->
+        <!-- Left Controls Column (5 cols) -->
         <section class="lg:col-span-5 flex flex-col gap-6">
             
             <!-- Model Picker Card -->
@@ -87,13 +87,14 @@
                 <div class="space-y-2">
                     <label for="model-select" class="text-xs font-medium text-slate-300">Danh sách Model có sẵn:</label>
                     <select id="model-select" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-sm rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition font-sans">
-                        <optgroup label="🟢 Siêu nhẹ (Khuyên dùng cho Điện thoại)">
+                        <optgroup label="🟢 Siêu nhẹ (Khuyên dùng cho Điện thoại / Máy yếu)">
                             <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" data-size="~350 MB" selected>Qwen 2.5 - 0.5B (Cực nhanh, tiếng Việt tốt)</option>
                             <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC" data-size="~700 MB">Llama 3.2 - 1B (Nhẹ nhàng, cân bằng)</option>
+                            <option value="SmolLM2-1.7B-Instruct-q4f16_1-MLC" data-size="~1.0 GB">SmolLM2 - 1.7B (Cấu trúc tối ưu gọn nhẹ)</option>
                         </optgroup>
                         <optgroup label="🟡 Vừa phải (Cho Laptop / ĐT Cấu hình mạnh)">
+                            <option value="gemma-2-2b-it-q4f16_1-MLC" data-size="~1.6 GB">Gemma 2 - 2B Instruct (Google, tư duy tốt)</option>
                             <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" data-size="~980 MB">Qwen 2.5 - 1.5B (Độ chính xác cao hơn)</option>
-                            <option value="SmolLM2-1.7B-Instruct-q4f16_1-MLC" data-size="~1.0 GB">SmolLM2 - 1.7B (Cấu trúc tối ưu gọn nhẹ)</option>
                             <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC" data-size="~1.8 GB">Llama 3.2 - 3B (Suy luận tốt, ngốn RAM vừa)</option>
                         </optgroup>
                         <optgroup label="🔴 Nặng (Chỉ nên xài trên PC / Card rời)">
@@ -104,7 +105,7 @@
 
                 <div class="text-xs text-slate-400 bg-slate-950 p-3 rounded-xl border border-slate-800/80 leading-relaxed">
                     <i class="fa-solid fa-circle-info text-emerald-400 mr-1"></i>
-                    Lần đầu chọn model trình duyệt sẽ cần tải file weight về IndexedDB. Từ lần thứ 2 sẽ load trực tiếp từ cache máy cực kỳ nhanh!
+                    Lần đầu chọn model trình duyệt sẽ cần tải file weight về Cache (IndexedDB). Từ lần thứ 2 sẽ load trực tiếp cực kỳ nhanh!
                 </div>
 
                 <div class="flex items-center gap-2 pt-1">
@@ -254,7 +255,7 @@
         </section>
     </main>
 
-    <!-- Custom Modal Dialog (Replacing browser alerts) -->
+    <!-- Custom Modal Dialog -->
     <div id="modal-backdrop" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <h3 id="modal-title" class="font-bold text-lg text-slate-100 flex items-center gap-2">
@@ -262,7 +263,7 @@
             </h3>
             <p id="modal-message" class="text-sm text-slate-300 leading-relaxed">Nội dung thông báo...</p>
             <div class="flex justify-end pt-2">
-                <button id="modal-btn-close" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl transition">
+                <button id="modal-btn-close" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl cursor-pointer transition">
                     Đã hiểu
                 </button>
             </div>
@@ -271,7 +272,8 @@
 
     <!-- Application Logic Script -->
     <script type="module">
-        import * as webllm from "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.70/+esm";
+        // Import WebLLM package (v0.2.78+)
+        import * as webllm from "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.78/+esm";
 
         // 10 Article Summaries in English (Tech / Science / AI)
         const ARTICLES = [
@@ -382,7 +384,7 @@
             modalBtnClose: document.getElementById('modal-btn-close')
         };
 
-        // Helper: Custom Modal Alert
+        // Custom Modal Alert
         function showAlert(title, message) {
             el.modalTitle.innerHTML = `<i class="fa-solid fa-circle-info text-emerald-400"></i> ${title}`;
             el.modalMessage.textContent = message;
@@ -451,7 +453,6 @@
             const count = selectedArticleIds.size;
             el.selectedCount.textContent = count;
             
-            // Calculate word count estimate
             let totalWords = 0;
             ARTICLES.filter(a => selectedArticleIds.has(a.id)).forEach(a => {
                 totalWords += a.content.split(/\s+/).length;
@@ -459,7 +460,7 @@
             el.totalWordsEstimate.textContent = `~${totalWords} từ`;
         }
 
-        // Handle Select/Deselect All Buttons
+        // Select/Deselect All
         el.btnSelectAll.addEventListener('click', () => {
             ARTICLES.forEach(a => selectedArticleIds.add(a.id));
             renderArticles();
@@ -476,7 +477,7 @@
             el.modelSizeBadge.textContent = selectedOpt.dataset.size || '';
         });
 
-        // WebLLM Engine Loading Function
+        // WebLLM Engine Loading Function with Dynamic Fallback for appConfig
         async function loadWebLLMEngine(selectedModel) {
             if (engine && currentModel === selectedModel) {
                 return engine; // Already initialized
@@ -500,10 +501,31 @@
             };
 
             try {
-                // Initialize webllm MLCEngine directly using WebLLM prebuilt catalog
                 const engineOptions = {
                     initProgressCallback: initProgressCallback
                 };
+
+                // Check if selectedModel exists in prebuiltAppConfig.model_list
+                const prebuiltList = webllm.prebuiltAppConfig?.model_list || [];
+                const isPrebuilt = prebuiltList.some(m => m.model_id === selectedModel);
+
+                // If not found in default prebuilt catalog, dynamically add a custom model record
+                if (!isPrebuilt) {
+                    console.warn(`Model ${selectedModel} is not in standard prebuiltAppConfig, appending custom record.`);
+                    
+                    const customModelRecord = {
+                        model: `https://huggingface.co/mlc-ai/${selectedModel}`,
+                        model_id: selectedModel,
+                        model_lib: webllm.modelLibURLPrefix + webllm.modelVersion + `/${selectedModel.includes('SmolLM2') ? 'Llama-3_2-1B-Instruct-q4f16_1-ctx4k_cs1k-webgpu.wasm' : selectedModel.split('-')[0] + '-webgpu.wasm'}`
+                    };
+
+                    engineOptions.appConfig = {
+                        model_list: [
+                            ...prebuiltList,
+                            customModelRecord
+                        ]
+                    };
+                }
 
                 engine = await webllm.CreateMLCEngine(selectedModel, engineOptions);
 
@@ -516,7 +538,7 @@
 
                 return engine;
             } catch (err) {
-                console.error(err);
+                console.error("WebLLM Engine Error:", err);
                 showAlert("Lỗi Tải Model", `Không thể khởi tạo ${selectedModel}. Chi tiết: ${err.message || err}`);
                 el.progressWrapper.classList.add('hidden');
                 throw err;
@@ -556,7 +578,7 @@
             el.statTokens.textContent = "0 tokens";
 
             try {
-                // Ensure model is loaded
+                // Ensure engine loaded
                 const eng = await loadWebLLMEngine(modelName);
 
                 // Build Input Text Prompt
@@ -582,10 +604,10 @@
                     max_tokens: 1024
                 });
 
-                el.outputText.textContent = ""; // Clear loader text
+                el.outputText.textContent = "";
 
                 for await (const chunk of completion) {
-                    if (!isGenerating) break; // Interrupted by stop button
+                    if (!isGenerating) break;
 
                     const textChunk = chunk.choices[0]?.delta?.content || "";
                     if (textChunk) {
@@ -599,7 +621,7 @@
                         generatedTokensCount++;
                         el.outputText.textContent = fullTextOutput;
 
-                        // Scroll output down automatically
+                        // Auto scroll
                         el.outputText.parentElement.scrollTop = el.outputText.parentElement.scrollHeight;
 
                         // Calculate live speed
@@ -721,17 +743,6 @@
         window.addEventListener('DOMContentLoaded', async () => {
             renderArticles();
             await checkWebGPUSupport();
-
-            // Populate / verify models with WebLLM prebuilt catalog
-            if (webllm.prebuiltAppConfig && webllm.prebuiltAppConfig.model_list) {
-                const availableIds = new Set(webllm.prebuiltAppConfig.model_list.map(m => m.model_id));
-                const options = el.modelSelect.options;
-                for (let i = 0; i < options.length; i++) {
-                    if (!availableIds.has(options[i].value)) {
-                        console.info(`Model ${options[i].value} not in default prebuilt bundle, WebLLM will attempt dynamic load.`);
-                    }
-                }
-            }
         });
     </script>
 </body>
