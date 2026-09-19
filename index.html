@@ -49,7 +49,7 @@
                 <div>
                     <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
                         WebGPU AI Benchmarker
-                        <span class="text-xs font-mono font-normal px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">WebLLM v0.2.85</span>
+                        <span class="text-xs font-mono font-normal px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">WebLLM v0.2.78</span>
                     </h1>
                     <p class="text-xs text-slate-400">Tóm tắt bản tin bằng Model Local trực tiếp qua WebGPU / WASM</p>
                 </div>
@@ -80,23 +80,24 @@
                     <h2 class="font-semibold text-sm uppercase tracking-wider text-emerald-400 flex items-center gap-2">
                         <i class="fa-solid fa-microchip"></i> 1. Chọn Local Model (WebLLM)
                     </h2>
-                    <span class="text-xs text-slate-400 font-mono" id="model-size-badge">~980 MB</span>
+                    <span class="text-xs text-slate-400 font-mono" id="model-size-badge">~900 MB</span>
                 </div>
 
                 <div class="space-y-2">
                     <label for="model-select" class="text-xs font-medium text-slate-300">Danh sách Model khả thi trên Mobile:</label>
                     <select id="model-select" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-sm rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition font-sans">
-                        <optgroup label="⭐ Khuyên dùng cho Điện thoại (Cân bằng tốt nhất)">
-                            <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" data-size="~980 MB" selected>Qwen 2.5 - 1.5B (Khuyến nghị: Tiếng Việt tốt, không crash RAM)</option>
+                        <optgroup label="🔥 Khuyên dùng mới nhất (Google Gemma 3 & Qwen)">
+                            <option value="gemma-3-1b-it-q4f16_1-MLC" data-size="~900 MB" selected>Gemma 3 - 1B Instruct (Google 2025 - Cực nhẹ, thông minh & mượt)</option>
+                            <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" data-size="~980 MB">Qwen 2.5 - 1.5B (Tiếng Việt rất chuẩn, cân bằng tốt)</option>
                         </optgroup>
-                        <optgroup label="🟢 Siêu nhẹ (Thử nghiệm)">
-                            <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC" data-size="~700 MB">Llama 3.2 - 1B (Đã thêm Repetition Penalty chống lặp)</option>
-                            <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" data-size="~350 MB">Qwen 2.5 - 0.5B (Rất nhẹ, ưu tiên prompt ngắn)</option>
-                            <option value="SmolLM2-1.7B-Instruct-q4f16_1-MLC" data-size="~1.0 GB">SmolLM2 - 1.7B (Nhẹ nhàng)</option>
+                        <optgroup label="🟢 Siêu nhẹ (Dưới 1GB)">
+                            <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC" data-size="~700 MB">Llama 3.2 - 1B (Meta Lightweight)</option>
+                            <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" data-size="~350 MB">Qwen 2.5 - 0.5B (Siêu nhẹ, tốc độ cao)</option>
+                            <option value="SmolLM2-1.7B-Instruct-q4f16_1-MLC" data-size="~1.0 GB">SmolLM2 - 1.7B</option>
                         </optgroup>
-                        <optgroup label="🟡 Vừa phải (Máy Android RAM >= 12GB / PC)">
-                            <option value="gemma-2-2b-it-q4f16_1-MLC" data-size="~1.6 GB">Gemma 2 - 2B Instruct (Tư duy tốt - Cần RAM lớn)</option>
-                            <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC" data-size="~1.8 GB">Llama 3.2 - 3B (Cần RAM > 3GB khả dụng)</option>
+                        <optgroup label="🟡 Máy mạnh / RAM lớn (>= 12GB RAM hoặc PC)">
+                            <option value="gemma-2-2b-it-q4f16_1-MLC" data-size="~1.6 GB">Gemma 2 - 2B Instruct (Thế hệ trước - Cần RAM lớn)</option>
+                            <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC" data-size="~1.8 GB">Llama 3.2 - 3B Instruct</option>
                         </optgroup>
                     </select>
                 </div>
@@ -280,8 +281,8 @@
 
     <!-- Application Logic Script -->
     <script type="module">
-        // Updated WebLLM package to latest v0.2.85
-        import * as webllm from "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.85/+esm";
+        // Reverted to stable WebLLM v0.2.78 package
+        import * as webllm from "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.78/+esm";
 
         // 10 Article Summaries in English (Tech / Science / AI)
         const ARTICLES = [
@@ -516,29 +517,10 @@
             };
 
             try {
-                const engineOptions = {
+                // Initialize MLC Engine using standard webllm CreateMLCEngine
+                engine = await webllm.CreateMLCEngine(selectedModel, {
                     initProgressCallback: initProgressCallback
-                };
-
-                const prebuiltList = webllm.prebuiltAppConfig?.model_list || [];
-                const isPrebuilt = prebuiltList.some(m => m.model_id === selectedModel);
-
-                if (!isPrebuilt) {
-                    const customModelRecord = {
-                        model: `https://huggingface.co/mlc-ai/${selectedModel}`,
-                        model_id: selectedModel,
-                        model_lib: webllm.modelLibURLPrefix + webllm.modelVersion + `/${selectedModel.includes('SmolLM2') ? 'Llama-3_2-1B-Instruct-q4f16_1-ctx4k_cs1k-webgpu.wasm' : selectedModel.split('-')[0] + '-webgpu.wasm'}`
-                    };
-
-                    engineOptions.appConfig = {
-                        model_list: [
-                            ...prebuiltList,
-                            customModelRecord
-                        ]
-                    };
-                }
-
-                engine = await webllm.CreateMLCEngine(selectedModel, engineOptions);
+                });
 
                 currentModel = selectedModel;
                 const loadDuration = ((performance.now() - startTime) / 1000).toFixed(2);
@@ -561,193 +543,4 @@
         }
 
         el.btnLoadModel.addEventListener('click', async () => {
-            const model = el.modelSelect.value;
-            try {
-                await loadWebLLMEngine(model);
-                showAlert("Thành Công", `Model ${model} đã sẵn sàng trong RAM WebGPU!`);
-            } catch (e) {}
-        });
-
-        // Execute Summarization Benchmark Task
-        async function runBenchmark() {
-            if (selectedArticleIds.size === 0) {
-                showAlert("Chưa Chọn Bài Báo", "Vui lòng chọn ít nhất 1 bài báo để bắt đầu tóm tắt.");
-                return;
-            }
-
-            const modelName = el.modelSelect.value;
-            const systemPrompt = el.systemPrompt.value.trim();
-            const tempVal = parseFloat(el.paramTemp.value);
-            const repVal = parseFloat(el.paramRep.value);
-
-            isGenerating = true;
-            el.btnRun.disabled = true;
-            el.btnStop.disabled = false;
-            el.btnCopy.disabled = true;
-            el.outputText.innerHTML = '<span class="text-amber-400 animate-pulse"><i class="fa-solid fa-spinner fa-spin"></i> Đang compile WebGPU Shader & xử lý Prefill Context (TTFT)...</span>';
-            el.statTtft.textContent = "0 ms";
-            el.statSpeed.textContent = "0.0 tok/s";
-            el.statTokens.textContent = "0 tokens";
-
-            try {
-                const eng = await loadWebLLMEngine(modelName);
-
-                const selectedArticles = ARTICLES.filter(a => selectedArticleIds.has(a.id));
-                let combinedArticlesText = selectedArticles.map((a, idx) => `[Tin ${idx + 1}: ${a.title}]\n${a.content}`).join("\n\n");
-
-                const messages = [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: `Nội dung ${selectedArticles.length} bài báo cần tóm tắt:\n\n${combinedArticlesText}` }
-                ];
-
-                const genStartTime = performance.now();
-                let firstTokenTime = null;
-                let generatedTokensCount = 0;
-                let fullTextOutput = "";
-
-                // Stream completions with custom sampling parameters
-                const completion = await eng.chat.completions.create({
-                    messages: messages,
-                    stream: true,
-                    temperature: tempVal,
-                    repetition_penalty: repVal,
-                    max_tokens: 1024
-                });
-
-                el.outputText.textContent = "";
-
-                for await (const chunk of completion) {
-                    if (!isGenerating) break;
-
-                    const textChunk = chunk.choices[0]?.delta?.content || "";
-                    if (textChunk) {
-                        if (!firstTokenTime) {
-                            firstTokenTime = performance.now();
-                            const ttftMs = Math.round(firstTokenTime - genStartTime);
-                            el.statTtft.textContent = `${ttftMs} ms`;
-                        }
-
-                        fullTextOutput += textChunk;
-                        generatedTokensCount++;
-                        el.outputText.textContent = fullTextOutput;
-
-                        el.outputText.parentElement.scrollTop = el.outputText.parentElement.scrollHeight;
-
-                        const elapsedTimeSec = (performance.now() - firstTokenTime) / 1000;
-                        if (elapsedTimeSec > 0) {
-                            const speed = (generatedTokensCount / elapsedTimeSec).toFixed(1);
-                            el.statSpeed.textContent = `${speed} tok/s`;
-                        }
-                        el.statTokens.textContent = `${generatedTokensCount} tokens`;
-                    }
-                }
-
-                el.btnCopy.disabled = false;
-
-                const totalGenDuration = firstTokenTime ? ((performance.now() - firstTokenTime) / 1000) : 0;
-                const finalSpeed = totalGenDuration > 0 ? (generatedTokensCount / totalGenDuration).toFixed(1) : 0;
-
-                addBenchmarkLog({
-                    model: modelName.split('-MLC')[0],
-                    loadTime: el.statLoadTime.textContent,
-                    ttft: el.statTtft.textContent,
-                    speed: `${finalSpeed} tok/s`,
-                    tokens: generatedTokensCount
-                });
-
-            } catch (err) {
-                console.error(err);
-                if (isGenerating) {
-                    el.outputText.innerHTML = `<span class="text-rose-400">❌ Lỗi xảy ra: ${err.message || err}</span>`;
-                }
-            } finally {
-                isGenerating = false;
-                el.btnRun.disabled = false;
-                el.btnStop.disabled = true;
-            }
-        }
-
-        // Stop Button
-        el.btnStop.addEventListener('click', () => {
-            isGenerating = false;
-            el.outputText.innerHTML += '\n\n<span class="text-amber-400 font-bold">[Đã dừng bởi người dùng]</span>';
-            el.btnStop.disabled = true;
-            el.btnRun.disabled = false;
-        });
-
-        el.btnRun.addEventListener('click', runBenchmark);
-
-        el.btnCopy.addEventListener('click', () => {
-            const text = el.outputText.textContent;
-            if (!text) return;
-            navigator.clipboard.writeText(text).then(() => {
-                const originalText = el.btnCopy.innerHTML;
-                el.btnCopy.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> Copied!`;
-                setTimeout(() => el.btnCopy.innerHTML = originalText, 2000);
-            });
-        });
-
-        el.btnClearOut.addEventListener('click', () => {
-            el.outputText.innerHTML = '<p class="text-slate-500 italic text-xs">Đã xóa kết quả. Bấm "BẮT ĐẦU TÓM TẮT" để thử lại...</p>';
-            el.btnCopy.disabled = true;
-            el.statTtft.textContent = "0 ms";
-            el.statSpeed.textContent = "0.0 tok/s";
-            el.statTokens.textContent = "0 tokens";
-        });
-
-        el.btnResetPrompt.addEventListener('click', () => {
-            el.systemPrompt.value = "Bạn là trợ lý AI tóm tắt tin tức. Hãy đọc các bài báo sau và viết tóm tắt bằng Tiếng Việt ngắn gọn, đàng hoàng, trình bày dạng danh sách gạch đầu dòng (bullet points).";
-            el.paramTemp.value = 0.5;
-            el.paramRep.value = 1.15;
-            el.valTemp.textContent = "0.5";
-            el.valRep.textContent = "1.15";
-        });
-
-        el.btnClearCache.addEventListener('click', async () => {
-            if (confirm("Xóa toàn bộ model weights trong IndexedDB cache?")) {
-                try {
-                    if (window.indexedDB) {
-                        const dbs = await window.indexedDB.databases();
-                        dbs.forEach(db => window.indexedDB.deleteDatabase(db.name));
-                    }
-                    showAlert("Thành Công", "Đã xóa Cache Model.");
-                } catch (e) {
-                    showAlert("Lỗi", "Không thể tự động xóa Cache.");
-                }
-            }
-        });
-
-        function addBenchmarkLog(log) {
-            benchmarkLogs.unshift(log);
-            renderBenchmarkLogs();
-        }
-
-        function renderBenchmarkLogs() {
-            if (benchmarkLogs.length === 0) {
-                el.historyTbody.innerHTML = `<tr><td colspan="5" class="py-3 text-center text-slate-500 italic font-sans">Chưa có dữ liệu benchmark nào.</td></tr>`;
-                return;
-            }
-
-            el.historyTbody.innerHTML = benchmarkLogs.map(log => `
-                <tr class="hover:bg-slate-800/40 transition">
-                    <td class="py-2 font-bold text-emerald-400 truncate max-w-[140px]" title="${log.model}">${log.model}</td>
-                    <td class="py-2 text-slate-300">${log.loadTime}</td>
-                    <td class="py-2 text-amber-300">${log.ttft}</td>
-                    <td class="py-2 text-cyan-300 font-bold">${log.speed}</td>
-                    <td class="py-2 text-slate-400">${log.tokens}</td>
-                </tr>
-            `).join('');
-        }
-
-        el.btnClearHistory.addEventListener('click', () => {
-            benchmarkLogs = [];
-            renderBenchmarkLogs();
-        });
-
-        window.addEventListener('DOMContentLoaded', async () => {
-            renderArticles();
-            await checkWebGPUSupport();
-        });
-    </script>
-</body>
-</html>
+<!-- ... existing code -->
