@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Piper TTS Benchmark</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1220;
+        --panel: #111827;
+        --panel-strong: #0f172a;
+        --border: #334155;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --accent: #38bdf8;
+        --accent-2: #8b5cf6;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --danger: #f87171;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(180deg, var(--bg), #020817);
+        color: var(--text);
+        padding: 20px 0 32px;
+      }
+
+      .card {
+        width: min(960px, calc(100vw - 24px));
+        margin: 0 auto;
+        background: rgba(17, 24, 39, 0.96);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+      }
+
+      h1 { margin: 0 0 10px; font-size: 26px; }
+      .muted { margin: 0 0 18px; color: var(--muted); line-height: 1.5; }
+      .segmented { display: inline-flex; gap: 8px; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border); border-radius: 12px; padding: 6px; margin-bottom: 14px; }
+      .mode-btn { appearance: none; border: 1px solid transparent; background: transparent; color: var(--muted); border-radius: 10px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+      .mode-btn.active { background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.4); color: var(--text); }
+      textarea { width: 100%; min-height: 180px; resize: vertical; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--panel-strong); color: var(--text); font-size: 16px; line-height: 1.6; }
+      .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 14px; }
+      .field { display: flex; flex-direction: column; gap: 6px; }
+      label { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+      select, input[type="range"] { width: 100%; }
+      select { border: 1px solid var(--border); border-radius: 10px; background: var(--panel-strong); color: var(--text); min-height: 42px; padding: 8px 10px; }
+      .range-row { display: flex; align-items: center; gap: 10px; }
+      .range-row output { min-width: 54px; text-align: right; color: var(--muted); font-weight: 700; }
+      .buttons { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+      button { appearance: none; border: none; border-radius: 10px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .primary { background: var(--accent); color: #02243d; }
+      .secondary { background: #1e293b; color: var(--text); }
+      .warning { background: var(--warning); color: #1f2937; }
+      .status { margin-top: 16px; min-height: 24px; color: var(--muted); }
+      .status.error { color: var(--danger); }
+      .status.ok { color: var(--success); }
+      .status.warn { color: var(--warning); }
+      .voice-info { margin-top: 12px; color: var(--muted); font-size: 14px; }
+      .log { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: rgba(15, 23, 42, 0.8); color: var(--text); white-space: pre-wrap; min-height: 80px; max-height: 180px; overflow-y: auto; line-height: 1.5; }
+      .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 18px; }
+      .stat-card { background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+      .stat-label { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+      .stat-value { margin-top: 8px; font-size: 18px; font-weight: 700; }
+      .progress-track { margin-top: 8px; width: 100%; height: 10px; background: rgba(148, 163, 184, 0.18); border-radius: 999px; overflow: hidden; border: 1px solid var(--border); }
+      .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: inherit; transition: width 0.2s ease; }
+      .benchmark-details { margin-top: 12px; color: var(--muted); line-height: 1.6; min-height: 24px; white-space: pre-line; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Piper TTS Benchmark</h1>
+      <p class="muted">
+        Measure model download time, warm-memory footprint, warm-to-first-speech latency,
+        and per-chunk synthesis timing for the browser-based Piper ONNX pipeline.
+      </p>
+
+      <div class="segmented" aria-label="Synthesis mode selector">
+        <button type="button" class="mode-btn active" data-mode="paragraph">Whole paragraph</button>
+        <button type="button" class="mode-btn" data-mode="sentence">Sentence by sentence</button>
+      </div>
+
+      <textarea id="textInput">Hello there. This is a browser-based Piper benchmark. We process the text locally, keep a language-scoped cache, and measure the warmup and synthesis timing for the selected ONNX voice bundle.</textarea>
+
+      <div class="controls">
+        <div class="field">
+          <label for="voiceSelect">Voice</label>
+          <select id="voiceSelect"></select>
+        </div>
+
+        <div class="field">
+          <label for="langSelect">Language</label>
+          <select id="langSelect"></select>
+        </div>
+
+        <div class="field">
+          <label for="speedSlider">Speed</label>
+          <div class="range-row">
+            <input id="speedSlider" type="range" min="0.8" max="1.6" step="0.05" value="1.05" />
+            <output id="speedValue" for="speedSlider">1.05x</output>
+          </div>
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button id="prepareBtn" class="warning" type="button">Prepare models</button>
+        <button id="playBtn" class="primary" type="button">Synthesize</button>
+        <button id="playFromBeginningBtn" class="secondary" type="button">Play from beginning</button>
+        <button id="pauseBtn" class="secondary" type="button">Pause</button>
+        <button id="resumeBtn" class="secondary" type="button">Resume</button>
+        <button id="skipBtn" class="secondary" type="button">Skip to next chunk</button>
+        <button id="stopBtn" class="secondary" type="button">Stop</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Model download</div>
+          <div id="downloadMetric" class="stat-value">--</div>
+          <div class="progress-track"><div id="downloadProgressBar" class="progress-bar"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Warm JS heap used</div>
+          <div id="memoryMetric" class="stat-value">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Browser heap cap</div>
+          <div id="heapLimitMetric" class="stat-value">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Warm up time</div>
+          <div id="warmUpMetric" class="stat-value">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Start → first speech</div>
+          <div id="warmWaitMetric" class="stat-value">--</div>
+        </div>
+      </div>
+
+      <div id="benchmarkDetails" class="benchmark-details">Benchmark data will appear here.</div>
+
+      <div id="status" class="status">Waiting for model setup.</div>
+      <div id="voiceInfo" class="voice-info"></div>
+      <div id="log" class="log">Ready.</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.all.min.js"></script>
+    <script>
+      const MODEL_BASE_URL = 'https://huggingface.co/rhasspy/piper-voices/resolve/main/';
+      const CACHE_PREFIX = 'piper-benchmark-v1';
+      const FALLBACK_LANGUAGES = [
+        { code: 'en_US', label: 'English (en_US)', sample: 'This morning, I took a walk in the park and enjoyed the sound of birds and wind.' },
+        { code: 'en_GB', label: 'English (UK) (en_GB)', sample: 'This morning I walked through the city and listened to the quiet sounds of early traffic.' },
+        { code: 'es_ES', label: 'Español (es_ES)', sample: 'Este es un texto de ejemplo para probar la síntesis de voz en español.' },
+        { code: 'fr_FR', label: 'Français (fr_FR)', sample: 'Voici un texte d’exemple pour tester la synthèse vocale en français.' },
+        { code: 'de_DE', label: 'Deutsch (de_DE)', sample: 'Dies ist ein Beispieltext zum Testen der deutschen Sprachsynthese.' },
+        { code: 'it_IT', label: 'Italiano (it_IT)', sample: 'Questo è un testo di esempio per provare la sintesi vocale italiana.' },
+        { code: 'ja_JP', label: '日本語 (ja_JP)', sample: 'これは日本語の音声合成をテストするためのサンプルテキストです。' },
+        { code: 'zh_CN', label: '中文 (zh_CN)', sample: '这是一个用于测试中文语音合成的示例文本，帮助检查发音和节奏。' },
+        { code: 'pt_BR', label: 'Português (pt_BR)', sample: 'Este é um texto de exemplo para testar a síntese de voz em português brasileiro.' },
+        { code: 'ru_RU', label: 'Русский (ru_RU)', sample: 'Это пример текста для проверки русской синтеза речи.' },
+        { code: 'ko_KR', label: '한국어 (ko_KR)', sample: '이 문장은 한국어 음성 합성을 테스트하기 위한 예시 텍스트입니다.' },
+        { code: 'ar_JO', label: 'العربية (ar_JO)', sample: 'هذا نص تجريبي لاختبار نطق اللغة العربية بشكل طبيعي.' },
+        { code: 'hi_IN', label: 'हिन्दी (hi_IN)', sample: 'यह एक उदाहरण पाठ है जो हिन्दी बोलने की संश्लेषण क्षमता को जाँचता है।' },
+        { code: 'tr_TR', label: 'Türkçe (tr_TR)', sample: 'Bu, Türkçe konuşma sentezi testleri için örnek bir metindir.' },
+        { code: 'uk_UA', label: 'Українська (uk_UA)', sample: 'Це приклад тексту для перевірки українського синтезу мови.' },
+        { code: 'vi_VN', label: 'Tiếng Việt (vi_VN)', sample: 'Đây là văn bản mẫu để kiểm tra tổng hợp giọng nói tiếng Việt.' }
+      ];
+
+      const PIPER_VOICE_GROUPS = {
+        en_US: ['ryan', 'lessac', 'amy', 'kristin', 'joe', 'kathleen', 'norman', 'libritts'],
+        en_GB: ['alan', 'cori', 'jenny_dioco', 'southern_english_female', 'vctk'],
+        es_ES: ['carlfm', 'davefx', 'sharvard'],
+        fr_FR: ['siwis', 'gilles', 'mls'],
+        de_DE: ['ramona', 'eva_k', 'karlsson', 'thorsten'],
+        it_IT: ['mls'],
+        ja_JP: ['hi_fi_captain'],
+        zh_CN: ['xiao_ya', 'chaowen', 'huayan'],
+        pt_BR: ['mls'],
+        ru_RU: ['mls'],
+        ko_KR: ['mls'],
+        ar_JO: ['mls'],
+        hi_IN: ['mls'],
+        tr_TR: ['mls'],
+        uk_UA: ['mls'],
+        vi_VN: ['mls']
+      };
+
+      let LANGUAGE_METADATA = FALLBACK_LANGUAGES.slice();
+      const PLAYBACK_SPEED = 1.40;
+      const CHUNK_GAP_SECONDS = 1;
+
+      const voiceSelect = document.getElementById('voiceSelect');
+      const langSelect = document.getElementById('langSelect');
+      const textInput = document.getElementById('textInput');
+      const statusEl = document.getElementById('status');
+      const voiceInfoEl = document.getElementById('voiceInfo');
+      const logEl = document.getElementById('log');
+      const speedSlider = document.getElementById('speedSlider');
+      const speedValue = document.getElementById('speedValue');
+      const playBtn = document.getElementById('playBtn');
+      const playFromBeginningBtn = document.getElementById('playFromBeginningBtn');
+      const prepareBtn = document.getElementById('prepareBtn');
+      const pauseBtn = document.getElementById('pauseBtn');
+      const resumeBtn = document.getElementById('resumeBtn');
+      const skipBtn = document.getElementById('skipBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const downloadMetric = document.getElementById('downloadMetric');
+      const memoryMetric = document.getElementById('memoryMetric');
+      const heapLimitMetric = document.getElementById('heapLimitMetric');
+      const warmUpMetric = document.getElementById('warmUpMetric');
+      const warmWaitMetric = document.getElementById('warmWaitMetric');
+      const benchmarkDetails = document.getElementById('benchmarkDetails');
+      const downloadProgressBar = document.getElementById('downloadProgressBar');
+
+      const activeMode = { value: 'paragraph' };
+      const modeButtons = Array.from(document.querySelectorAll('.mode-btn'));
+      let engineByLanguage = {};
+      let audioCtx = null;
+      let warmupInProgress = false;
+      let scheduledSources = [];
+      let sentenceSessionToken = 0;
+      let isPaused = false;
+      let activeSession = null;
+      const benchmarkState = {
+        downloadStartedAt: 0,
+        downloadCompleteAt: 0,
+        downloadedBytes: 0,
+        totalBytes: 0,
+        warmReadyAt: 0,
+        warmupMs: null,
+        synthesisStartedAt: 0,
+        firstSpeechAt: 0,
+        warmWaitMs: null,
+        synthStats: [],
+        memoryUsage: null
+      };
+
+      function getCacheName(languageCode) {
+        return `${CACHE_PREFIX}-${languageCode}`;
+      }
+
+      function getLanguageMeta(languageCode) {
+        return LANGUAGE_METADATA.find(item => item.code === languageCode) || LANGUAGE_METADATA[0];
+      }
+
+      function getVoicesForLanguage(languageCode) {
+        const voices = PIPER_VOICE_GROUPS[languageCode] || PIPER_VOICE_GROUPS.en_US || [];
+        return voices.slice();
+      }
+
+      function getModelPath(languageCode, voiceName, quality = 'medium') {
+        const family = languageCode.split('_')[0].toLowerCase();
+        const modelName = `${languageCode}-${voiceName}-${quality}.onnx`;
+        return `${family}/${languageCode}/${voiceName}/${quality}/${modelName}`;
+      }
+
+      function getModelMetadataPath(languageCode, voiceName, quality = 'medium') {
+        return `${getModelPath(languageCode, voiceName, quality)}.json`;
+      }
+
+      async function loadLanguageCatalog() {
+        LANGUAGE_METADATA = FALLBACK_LANGUAGES.slice();
+        return LANGUAGE_METADATA;
+      }
+
+      function populateLanguageOptions() {
+        langSelect.innerHTML = '';
+        for (const language of LANGUAGE_METADATA) {
+          const option = document.createElement('option');
+          option.value = language.code;
+          option.textContent = language.label;
+          langSelect.appendChild(option);
+        }
+        langSelect.value = 'en_US';
+        updateSampleTextForLanguage('en_US');
+      }
+
+      function populateVoiceOptions(languageCode = langSelect.value) {
+        voiceSelect.innerHTML = '';
+        const voices = getVoicesForLanguage(languageCode);
+        for (const voice of voices) {
+          const option = document.createElement('option');
+          option.value = voice;
+          option.textContent = voice;
+          voiceSelect.appendChild(option);
+        }
+        if (voiceSelect.options.length) {
+          voiceSelect.value = voices[0];
+        }
+      }
+
+      function updateSampleTextForLanguage(languageCode) {
+        const language = getLanguageMeta(languageCode);
+        textInput.value = language.sample;
+      }
+
+      langSelect.addEventListener('change', (event) => {
+        const languageCode = event.target.value;
+        updateSampleTextForLanguage(languageCode);
+        populateVoiceOptions(languageCode);
+      });
+
+      speedSlider.value = String(PLAYBACK_SPEED);
+      speedValue.textContent = `${PLAYBACK_SPEED.toFixed(2)}x`;
+      speedSlider.addEventListener('input', () => {
+        speedValue.textContent = Number(speedSlider.value).toFixed(2) + 'x';
+      });
+
+      modeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          if (isStreamActive() || warmupInProgress || isDownloadInProgress()) {
+            return;
+          }
+          modeButtons.forEach(b => b.classList.toggle('active', b === button));
+          activeMode.value = button.dataset.mode;
+          logEl.textContent = `Mode: ${activeMode.value === 'paragraph' ? 'whole paragraph' : 'sentence by sentence'}`;
+          updateButtonState();
+        });
+      });
+
+      function setStatus(message, kind = 'info') {
+        statusEl.textContent = message;
+        statusEl.className = 'status';
+        if (kind === 'ok') statusEl.classList.add('ok');
+        if (kind === 'error') statusEl.classList.add('error');
+        if (kind === 'warn') statusEl.classList.add('warn');
+      }
+
+      function logMessage(message) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        logEl.textContent = `[${time}] ${message}\n${logEl.textContent}`;
+      }
+
+      function formatBytes(bytes) {
+        if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let value = bytes;
+        let unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+          value /= 1024;
+          unitIndex += 1;
+        }
+        return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+      }
+
+      function updateBenchmarkUi() {
+        const downloadPct = benchmarkState.totalBytes > 0 ? Math.min(100, (benchmarkState.downloadedBytes / benchmarkState.totalBytes) * 100) : 0;
+        downloadMetric.textContent = benchmarkState.totalBytes > 0
+          ? `${formatBytes(benchmarkState.downloadedBytes)} / ${formatBytes(benchmarkState.totalBytes)} (${downloadPct.toFixed(0)}%)`
+          : '--';
+        downloadProgressBar.style.width = `${downloadPct}%`;
+
+        if (benchmarkState.memoryUsage) {
+          const used = benchmarkState.memoryUsage.usedJsHeapSize || benchmarkState.memoryUsage.used || 0;
+          const limit = benchmarkState.memoryUsage.jsHeapSizeLimit || benchmarkState.memoryUsage.limit || 0;
+          memoryMetric.textContent = `${formatBytes(used)} used`;
+          heapLimitMetric.textContent = limit > 0 ? formatBytes(limit) : '--';
+          memoryMetric.title = 'JS heap usage for the warmed model and page.';
+          heapLimitMetric.title = 'Browser heap cap for this tab; not the same as actual in-use memory.';
+        } else {
+          memoryMetric.textContent = '--';
+          heapLimitMetric.textContent = '--';
+          memoryMetric.title = '';
+          heapLimitMetric.title = '';
+        }
+
+        if (benchmarkState.warmupMs !== null && Number.isFinite(benchmarkState.warmupMs)) {
+          warmUpMetric.textContent = `${benchmarkState.warmupMs.toFixed(0)} ms`;
+        } else {
+          warmUpMetric.textContent = '--';
+        }
+
+        if (benchmarkState.warmWaitMs !== null && Number.isFinite(benchmarkState.warmWaitMs)) {
+          warmWaitMetric.textContent = `${benchmarkState.warmWaitMs.toFixed(0)} ms`;
+        } else {
+          warmWaitMetric.textContent = '--';
+        }
+
+        if (benchmarkState.synthStats.length) {
+          benchmarkDetails.textContent = benchmarkState.synthStats.map((entry) => {
+            if (entry.mode === 'full') {
+              return `Full synthesis: ${entry.elapsedMs.toFixed(0)} ms @ ${entry.speed}x, samples=${entry.samples}`;
+            }
+            return `Chunk ${entry.index}: ${entry.elapsedMs.toFixed(0)} ms, ${entry.words} words, samples=${entry.samples}`;
+          }).join('\n');
+        } else {
+          benchmarkDetails.textContent = 'Benchmark data will appear here.';
+        }
+      }
+
+      function setMemoryUsage() {
+        const mem = performance.memory;
+        if (!mem) return;
+        benchmarkState.memoryUsage = {
+          usedJsHeapSize: mem.usedJSHeapSize,
+          jsHeapSizeLimit: mem.jsHeapSizeLimit,
+          totalJsHeapSize: mem.totalJSHeapSize
+        };
+        updateBenchmarkUi();
+      }
+
+      function markFirstSpeechAt() {
+        if (benchmarkState.firstSpeechAt) return;
+        benchmarkState.firstSpeechAt = performance.now();
+        if (benchmarkState.synthesisStartedAt) {
+          benchmarkState.warmWaitMs = benchmarkState.firstSpeechAt - benchmarkState.synthesisStartedAt;
+        } else if (benchmarkState.warmReadyAt) {
+          benchmarkState.warmWaitMs = benchmarkState.firstSpeechAt - benchmarkState.warmReadyAt;
+        }
+        updateButtonState();
+        updateBenchmarkUi();
+      }
+
+      function chunkText(text, maxLen = 300) {
+        const raw = text.trim();
+        if (!raw) return [];
+        const rawSentences = raw.split(/(?<=[.!?])\s+|\n+/).map(s => s.trim()).filter(Boolean);
+        if (!rawSentences.length) return [raw];
+
+        const MIN_WORDS = 15;
+        const chunks = [];
+        let current = '';
+
+        for (const sentence of rawSentences) {
+          const next = current ? `${current} ${sentence}` : sentence;
+          const words = next.split(/\s+/).filter(Boolean).length;
+          if (words >= MIN_WORDS || next.length >= maxLen) {
+            if (current) chunks.push(current);
+            current = sentence;
+          } else {
+            current = next;
+          }
+        }
+
+        if (current) chunks.push(current);
+        return chunks.length ? chunks : [raw];
+      }
+
+      function getAudioCtx() {
+        if (!audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new Ctx({ latencyHint: 'interactive', sampleRate: 44100 });
+        }
+        if (audioCtx.state === 'suspended' && !isPaused) {
+          try { audioCtx.resume(); } catch (e) {}
+        }
+        return audioCtx;
+      }
+
+      function stopPlayback(clearSession = true) {
+        if (activeSession) {
+          activeSession.isStopped = true;
+          if (activeSession.stopActiveSource) {
+            activeSession.stopActiveSource('stopped');
+          }
+          if (activeSession.readyResolvers) {
+            activeSession.readyResolvers.forEach(r => r && r(null));
+          }
+        }
+
+        for (const src of scheduledSources) {
+          try { src.onended = null; src.stop(); } catch (e) {}
+        }
+        scheduledSources = [];
+
+        if (audioCtx && audioCtx.state === 'running') {
+          try { audioCtx.suspend(); } catch (e) {}
+        }
+
+        if (clearSession) activeSession = null;
+      }
+
+      function clearBenchmarkSession() {
+        stopPlayback(true);
+        isPaused = false;
+        updateButtonState();
+      }
+
+      function isDownloadInProgress() {
+        return benchmarkState.downloadStartedAt > 0 && benchmarkState.downloadCompleteAt === 0;
+      }
+
+      function isStreamActive() {
+        return isSynthesizing() || isPlaybackActive();
+      }
+
+      function isSynthesizing() {
+        return !!activeSession && !activeSession.isStopped && activeSession.playbackStarted === false;
+      }
+
+      function isPlaybackActive() {
+        return !!activeSession && !activeSession.isStopped && activeSession.playbackStarted === true;
+      }
+
+      function updateButtonState() {
+        const preparing = warmupInProgress || isDownloadInProgress();
+        const hasReadyEngine = !!engineByLanguage[langSelect.value] && !warmupInProgress;
+        const synthesizing = isSynthesizing();
+        const playbackActive = isPlaybackActive();
+
+        prepareBtn.disabled = !!engineByLanguage[langSelect.value] || preparing;
+        if (engineByLanguage[langSelect.value]) {
+          prepareBtn.title = 'Model already loaded and cached for this language.';
+        } else if (warmupInProgress) {
+          prepareBtn.title = 'Model warmup is already in progress.';
+        } else if (isDownloadInProgress()) {
+          prepareBtn.title = 'Model files are currently downloading.';
+        } else {
+          prepareBtn.title = 'Download and cache the Piper model files for this language.';
+        }
+
+        playBtn.disabled = !hasReadyEngine || preparing || synthesizing || playbackActive;
+        playBtn.title = hasReadyEngine && !preparing && !synthesizing && !playbackActive
+          ? 'Synthesize the current text.'
+          : 'Wait for the current warmup or stream to finish.';
+
+        playFromBeginningBtn.disabled = !playbackActive;
+        pauseBtn.disabled = !playbackActive || isPaused;
+        resumeBtn.disabled = !playbackActive || !isPaused;
+        skipBtn.disabled = !playbackActive || activeSession?.mode !== 'sentence';
+        stopBtn.disabled = !activeSession || activeSession.isStopped;
+
+        modeButtons.forEach((button) => {
+          const allowed = !preparing && !synthesizing && !playbackActive && hasReadyEngine;
+          button.disabled = !allowed;
+        });
+      }
+
+      function pausePlayback() {
+        isPaused = true;
+        if (activeSession) activeSession.isPaused = true;
+        if (audioCtx && audioCtx.state === 'running') {
+          try { audioCtx.suspend(); } catch (e) {}
+        }
+        updateButtonState();
+        setStatus('Playback paused.', 'warn');
+        logMessage('Playback paused.');
+      }
+
+      function resumePlayback() {
+        isPaused = false;
+        if (activeSession) activeSession.isPaused = false;
+        if (audioCtx && audioCtx.state === 'suspended') {
+          try { audioCtx.resume(); } catch (e) {}
+        }
+        updateButtonState();
+        setStatus('Playback resumed.', 'ok');
+        logMessage('Playback resumed.');
+      }
+
+      function skipToNextChunk() {
+        if (!activeSession || activeSession.isStopped) {
+          setStatus('No active sentence playback to skip.', 'warn');
+          return;
+        }
+
+        if (activeSession.currentPlayingIndex >= activeSession.chunks.length - 1) {
+          setStatus('Already on the last chunk; cannot skip further.', 'warn');
+          return;
+        }
+
+        const currentIdx = activeSession.currentPlayingIndex;
+        logMessage(`Skip to next chunk requested: stopping chunk ${currentIdx + 1} to play chunk ${currentIdx + 2}.`);
+        setStatus(`Skipping to chunk ${currentIdx + 2}/${activeSession.chunks.length}...`, 'warn');
+
+        if (activeSession.stopActiveSource) {
+          activeSession.stopActiveSource('skipped');
+        } else {
+          activeSession.currentPlayingIndex++;
+        }
+      }
+
+      function playFromBeginning() {
+        if (!activeSession || activeSession.isStopped || !activeSession.playbackStarted) {
+          setStatus('No current synthesis session to replay from the start.', 'warn');
+          return;
+        }
+
+        activeSession.isPaused = false;
+        activeSession.currentPlayingIndex = 0;
+
+        if (activeSession.mode === 'paragraph') {
+          const paragraphAudio = activeSession.buffers && activeSession.buffers[0];
+          if (paragraphAudio && paragraphAudio.wav && paragraphAudio.wav.length > 0) {
+            if (activeSession.stopActiveSource) activeSession.stopActiveSource('restart');
+            playParagraphSession(activeSession, paragraphAudio.wav, paragraphAudio.sampleRate || 22050);
+            setStatus('Replay from beginning. Paragraph playback restarted.', 'ok');
+            logMessage('Replay requested from the beginning of the paragraph buffer.');
+          }
+          return;
+        }
+
+        if (activeSession.stopActiveSource) activeSession.stopActiveSource('restart');
+        setStatus('Replay from beginning. Background synthesis continues.', 'ok');
+        logMessage('Replay requested from chunk 1 while background generation keeps running.');
+      }
+
+      function playParagraphSession(session, wav, sampleRate) {
+        if (!wav || wav.length === 0) return;
+        session.playbackStarted = true;
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended' && !session.isPaused) {
+          try { ctx.resume(); } catch (e) {}
+        }
+
+        const buffer = ctx.createBuffer(1, wav.length, sampleRate || 44100);
+        const channel = buffer.getChannelData(0);
+        let maxValue = 0;
+        for (let i = 0; i < wav.length; i++) {
+          const abs = Math.abs(wav[i]);
+          if (abs > maxValue) maxValue = abs;
+        }
+
+        if (maxValue > 0) {
+          const scale = 0.9 / Math.max(maxValue, 0.01);
+          for (let i = 0; i < wav.length; i++) channel[i] = wav[i] * scale;
+        } else {
+          channel.fill(0);
+        }
+
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        src.playbackRate.value = PLAYBACK_SPEED;
+        src.connect(ctx.destination);
+
+        scheduledSources.push(src);
+        session.stopActiveSource = () => {
+          try { src.stop(); } catch (e) {}
+          scheduledSources = scheduledSources.filter(item => item !== src);
+          session.stopActiveSource = null;
+        };
+
+        src.onended = () => {
+          scheduledSources = scheduledSources.filter(item => item !== src);
+          if (session.stopActiveSource) session.stopActiveSource = null;
+        };
+
+        markFirstSpeechAt();
+        src.start();
+      }
+
+      function playChunkWithSkipSupport(session, audioData) {
+        return new Promise((resolve) => {
+          const ctx = getAudioCtx();
+          if (ctx.state === 'suspended' && !session.isPaused) {
+            try { ctx.resume(); } catch (e) {}
+          }
+
+          const wav = audioData.wav;
+          const sampleRate = audioData.sampleRate || 22050;
+          const buffer = ctx.createBuffer(1, wav.length, sampleRate);
+          const channel = buffer.getChannelData(0);
+          let maxValue = 0;
+          for (let i = 0; i < wav.length; i++) {
+            const abs = Math.abs(wav[i]);
+            if (abs > maxValue) maxValue = abs;
+          }
+
+          if (maxValue > 0) {
+            const scale = 0.9 / Math.max(maxValue, 0.01);
+            for (let i = 0; i < wav.length; i++) channel[i] = wav[i] * scale;
+          } else {
+            channel.fill(0);
+          }
+
+          const src = ctx.createBufferSource();
+          src.buffer = buffer;
+          src.playbackRate.value = PLAYBACK_SPEED;
+          src.connect(ctx.destination);
+          scheduledSources.push(src);
+
+          let done = false;
+          const cleanupAndResolve = reason => {
+            if (done) return;
+            done = true;
+            scheduledSources = scheduledSources.filter(s => s !== src);
+            session.stopActiveSource = null;
+            src.onended = null;
+            resolve(reason);
+          };
+
+          src.onended = () => cleanupAndResolve('completed');
+          session.stopActiveSource = reason => {
+            try { src.stop(); } catch (e) {}
+            cleanupAndResolve(reason);
+          };
+
+          if (session.isStopped) {
+            cleanupAndResolve('stopped');
+            return;
+          }
+
+          src.start();
+        });
+      }
+
+      class PiperRuntime {
+        constructor(languageCode, voiceName) {
+          this.languageCode = languageCode;
+          this.voiceName = voiceName;
+          this.sampleRate = 22050;
+          this.session = null;
+          this.modelPath = getModelPath(languageCode, voiceName, 'medium');
+          this.phonemeIdMap = {};
+        }
+
+        static async load(languageCode, voiceName) {
+          const runtime = new PiperRuntime(languageCode, voiceName);
+          const modelUrl = `${MODEL_BASE_URL}${runtime.modelPath}`;
+
+          let response = null;
+          if (typeof caches !== 'undefined') {
+            try {
+              const cache = await caches.open(getCacheName(languageCode));
+              response = await cache.match(modelUrl);
+            } catch (error) {
+              response = null;
+            }
+          }
+
+          if (!response) {
+            response = await fetch(modelUrl, { mode: 'cors', credentials: 'omit' });
+          }
+
+          if (!response || !response.ok) {
+            throw new Error(`Piper model unavailable for ${languageCode}/${voiceName}`);
+          }
+
+          const modelBytes = new Uint8Array(await response.arrayBuffer());
+          runtime.session = await ort.InferenceSession.create(modelBytes, {
+            executionProviders: ['wasm'],
+            graphOptimizationLevel: 'all',
+            logSeverityLevel: 3,
+            logVerbosityLevel: 0
+          });
+
+          try {
+            const metadataUrl = `${MODEL_BASE_URL}${runtime.modelPath}.json`;
+            let metadataResponse = null;
+            if (typeof caches !== 'undefined') {
+              try {
+                const cache = await caches.open(getCacheName(languageCode));
+                metadataResponse = await cache.match(metadataUrl);
+              } catch (error) {
+                metadataResponse = null;
+              }
+            }
+            if (!metadataResponse) {
+              metadataResponse = await fetch(metadataUrl, { mode: 'cors', credentials: 'omit' });
+              if (typeof caches !== 'undefined' && metadataResponse && metadataResponse.ok) {
+                try {
+                  const cache = await caches.open(getCacheName(languageCode));
+                  await cache.put(metadataUrl, metadataResponse.clone());
+                } catch (error) {
+                  // Ignore cache persistence failures for metadata.
+                }
+              }
+            }
+            if (metadataResponse && metadataResponse.ok) {
+              const metadata = await metadataResponse.json();
+              runtime.phonemeIdMap = metadata.phoneme_id_map || {};
+            }
+          } catch (error) {
+            runtime.phonemeIdMap = {};
+          }
+
+          return runtime;
+        }
+
+        phonemizeText(text) {
+          const source = (text || '').trim() || 'hello world';
+          const normalized = source
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          if (!normalized) return 'hello world';
+
+          const tokens = normalized.split(/\s+/);
+          const phonemeMap = this.phonemeIdMap || {};
+          const fallbackWordMap = {
+            a: 'ɑ', e: 'ɛ', i: 'ɪ', o: 'oʊ', u: 'u', y: 'j', h: 'h', l: 'l', m: 'm', n: 'n', r: 'ɹ',
+            s: 's', t: 't', d: 'd', f: 'f', g: 'g', p: 'p', k: 'k', v: 'v', w: 'w', x: 'ks', z: 'z',
+            b: 'b', c: 'k', q: 'k', j: 'dʒ', th: 'ð', sh: 'ʃ', ch: 'tʃ', ng: 'ŋ', ph: 'f', zh: 'ʒ',
+            wh: 'w', qu: 'kw', gh: 'g', ea: 'i', ee: 'i', oo: 'u', ou: 'aʊ', ow: 'aʊ', ai: 'eɪ', ay: 'eɪ',
+            oi: 'ɔɪ', oy: 'ɔɪ', ar: 'ɑɹ', er: 'ɝ', ir: 'ɝ', ur: 'ɝ', or: 'ɔɹ'
+          };
+
+          const ipaTokens = [];
+          for (const token of tokens) {
+            let word = token.toLowerCase().replace(/[^a-z0-9']/g, '');
+            if (!word) continue;
+
+            const asPhoneme = [];
+            for (let i = 0; i < word.length; i++) {
+              const remaining = word.slice(i);
+              const matched = Object.keys(fallbackWordMap)
+                .filter(key => key.length > 1)
+                .sort((a, b) => b.length - a.length)
+                .find(key => remaining.startsWith(key));
+
+              if (matched) {
+                const value = fallbackWordMap[matched];
+                if (value) {
+                  asPhoneme.push(value);
+                  i += matched.length - 1;
+                  continue;
+                }
+              }
+
+              const literal = word[i];
+              const direct = fallbackWordMap[literal] || literal;
+              if (typeof direct === 'string' && direct.length) {
+                asPhoneme.push(direct);
+              }
+            }
+
+            if (!asPhoneme.length) {
+              const letters = Array.from(word);
+              for (const letter of letters) {
+                const direct = fallbackWordMap[letter] || letter;
+                if (direct) asPhoneme.push(String(direct));
+              }
+            }
+
+            const validPhonemes = asPhoneme.filter((value) => {
+              if (!value || !value.trim()) return false;
+              const key = value.trim();
+              return Object.prototype.hasOwnProperty.call(phonemeMap, key) || key === ' ';
+            });
+
+            if (validPhonemes.length) {
+              ipaTokens.push(validPhonemes.join(' '));
+            } else {
+              ipaTokens.push(asPhoneme.join(' '));
+            }
+          }
+
+          const finalText = ipaTokens.join(' ');
+          return finalText || 'hello world';
+        }
+
+        buildFallbackIds(text) {
+          const map = this.phonemeIdMap || {};
+          const padToken = map['_']?.[0] ?? 0;
+          const bosToken = map['^']?.[0] ?? 1;
+          const eosToken = map['$']?.[0] ?? 2;
+          const phrase = this.phonemizeText(text);
+          const tokens = phrase.split(/\s+/).filter(Boolean);
+          const ids = [bosToken];
+
+          for (const token of tokens) {
+            const id = map[token]?.[0];
+            if (typeof id === 'number') {
+              ids.push(id);
+            } else if (token.length > 0) {
+              const fallback = Array.from(token).map((ch) => map[ch]?.[0]).filter((value) => typeof value === 'number');
+              if (fallback.length) {
+                ids.push(...fallback);
+              }
+            }
+            ids.push(padToken);
+          }
+
+          ids.push(eosToken);
+          return ids.slice(0, 64).concat(Array(64).fill(0)).slice(0, 64);
+        }
+
+        toBigIntTensorInput(ids) {
+          const input = new ort.Tensor('int64', new BigInt64Array(ids.map(value => BigInt(value))), [1, ids.length]);
+          const inputLengths = new ort.Tensor('int64', new BigInt64Array([BigInt(ids.length)]), [1]);
+          const scales = new ort.Tensor('float32', new Float32Array([1.0, 1.0, 1.0]), [3]);
+          return {
+            input,
+            input_lengths: inputLengths,
+            scales
+          };
+        }
+
+        async warmup() {
+          if (!this.session || typeof this.session.run !== 'function') {
+            throw new Error('Piper session could not be created.');
+          }
+          const ids = this.buildFallbackIds('hello world');
+          const feeds = this.toBigIntTensorInput(ids);
+          await this.session.run(feeds);
+        }
+
+        async synthesize(text, speed = 1.05) {
+          if (!this.session || typeof this.session.run !== 'function') {
+            throw new Error('Piper model is not loaded.');
+          }
+
+          const ids = this.buildFallbackIds(text);
+          const feeds = this.toBigIntTensorInput(ids);
+          const outputs = await this.session.run(feeds);
+          const rawData = outputs?.output?.data ?? outputs?.[0]?.data ?? outputs?.data ?? new Float32Array(0);
+          const waveform = new Float32Array(rawData);
+
+          if (!waveform.length) {
+            throw new Error('Piper model did not return waveform data.');
+          }
+
+          let peak = 0;
+          for (let i = 0; i < waveform.length; i++) {
+            peak = Math.max(peak, Math.abs(waveform[i]));
+          }
+          const amplitude = peak > 0 ? 0.8 / peak : 0.1;
+          const normalized = new Float32Array(waveform.length);
+          for (let i = 0; i < waveform.length; i++) {
+            normalized[i] = waveform[i] * amplitude * (0.9 + Number(speed) * 0.15);
+          }
+
+          return {
+            wav: normalized,
+            duration: normalized.length / this.sampleRate,
+            sampleRate: this.sampleRate
+          };
+        }
+      }
+
+      async function warmCachedModelIfAvailable() {
+        if (warmupInProgress || engineByLanguage[langSelect.value]) return engineByLanguage[langSelect.value];
+        if (typeof ort === 'undefined' || typeof caches === 'undefined') {
+          setStatus('ONNX Runtime Web is not loaded yet.', 'warn');
+          return null;
+        }
+
+        warmupInProgress = true;
+        updateButtonState();
+
+        try {
+          const currentLanguage = langSelect.value;
+          const currentVoice = voiceSelect.value;
+          const cache = await caches.open(getCacheName(currentLanguage));
+          const requiredFiles = [
+            getModelPath(currentLanguage, currentVoice, 'medium'),
+            getModelMetadataPath(currentLanguage, currentVoice, 'medium')
+          ];
+
+          let hasAllFiles = true;
+          for (const file of requiredFiles) {
+            const cached = await cache.match(MODEL_BASE_URL + file);
+            if (!cached) {
+              hasAllFiles = false;
+              break;
+            }
+          }
+
+          if (!hasAllFiles) {
+            setStatus('Model cache not found yet. Click Prepare models to download.', 'warn');
+            return null;
+          }
+
+          setStatus('Warmup: loading cached Piper model...', 'warn');
+          const warmStart = performance.now();
+          const engine = await PiperRuntime.load(currentLanguage, currentVoice);
+          await engine.warmup();
+          engineByLanguage[currentLanguage] = engine;
+          benchmarkState.warmReadyAt = performance.now();
+          benchmarkState.warmupMs = benchmarkState.warmReadyAt - warmStart;
+          setMemoryUsage();
+          voiceInfoEl.textContent = `Cached model warmup complete for ${currentLanguage} / ${currentVoice}. The model is ready to synthesize immediately.`;
+          setStatus('Cached Piper model warm and ready.', 'ok');
+          logMessage(`Cached model detected for ${currentLanguage} and warmed on page load in ${benchmarkState.warmupMs.toFixed(0)} ms.`);
+          updateBenchmarkUi();
+          updateButtonState();
+          return engine;
+        } catch (error) {
+          setStatus('Cached warmup failed. Click Prepare models to download.', 'error');
+          return null;
+        } finally {
+          warmupInProgress = false;
+          updateButtonState();
+        }
+      }
+
+      async function prepareModels() {
+        if (typeof ort === 'undefined') {
+          throw new Error('ONNX Runtime Web is not loaded. Add the CDN script before this page loads.');
+        }
+
+        if (typeof caches === 'undefined') {
+          throw new Error('Cache API is required for the model cache.');
+        }
+
+        const languageCode = langSelect.value;
+        const voiceName = voiceSelect.value;
+        const cache = await caches.open(getCacheName(languageCode));
+        const requiredFiles = [
+          getModelPath(languageCode, voiceName, 'medium'),
+          getModelMetadataPath(languageCode, voiceName, 'medium')
+        ];
+        const missing = [];
+
+        for (const file of requiredFiles) {
+          const url = MODEL_BASE_URL + file;
+          const cached = await cache.match(url);
+          if (!cached) missing.push(file);
+        }
+
+        warmupInProgress = true;
+        updateButtonState();
+
+        try {
+          if (missing.length) {
+            benchmarkState.downloadStartedAt = performance.now();
+            benchmarkState.downloadedBytes = 0;
+            benchmarkState.totalBytes = 0;
+            benchmarkState.downloadCompleteAt = 0;
+
+            for (const file of missing) {
+              const url = MODEL_BASE_URL + file;
+              const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+              if (!response.ok) throw new Error(`Failed to fetch ${file}: ${response.status}`);
+              const lengthHeader = Number(response.headers.get('content-length') || 0);
+              benchmarkState.totalBytes += lengthHeader || 0;
+            }
+
+            setStatus('Downloading Piper model files...', 'warn');
+            for (const file of missing) {
+              const url = MODEL_BASE_URL + file;
+              const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+              if (!response.ok) throw new Error(`Failed to fetch ${file}: ${response.status}`);
+              const lengthHeader = Number(response.headers.get('content-length') || 0);
+              benchmarkState.downloadedBytes += lengthHeader || 0;
+              updateBenchmarkUi();
+              await cache.put(url, response.clone());
+              logMessage(`Cached ${file}`);
+            }
+            benchmarkState.downloadCompleteAt = performance.now();
+          }
+
+          const warmStart = performance.now();
+          const engine = await PiperRuntime.load(languageCode, voiceName);
+          await engine.warmup();
+          engineByLanguage[languageCode] = engine;
+          benchmarkState.warmReadyAt = performance.now();
+          benchmarkState.warmupMs = benchmarkState.warmReadyAt - warmStart;
+          setMemoryUsage();
+          voiceInfoEl.textContent = `Engine ready for ${languageCode} / ${voiceName}. Piper ONNX Web runtime is loaded and cached.`;
+          setStatus('Piper ready.', 'ok');
+          logMessage(`Model load complete for ${languageCode}/${voiceName}. Warmed in ${benchmarkState.warmupMs.toFixed(0)} ms.`);
+          updateBenchmarkUi();
+        } finally {
+          warmupInProgress = false;
+          updateButtonState();
+        }
+      }
+
+      async function synthesizeCurrentText() {
+        const text = textInput.value.trim();
+        if (!text) {
+          setStatus('Add some text first.', 'error');
+          return;
+        }
+
+        const languageCode = langSelect.value;
+        const voiceName = voiceSelect.value;
+        const speed = Number(speedSlider.value);
+
+        if (!engineByLanguage[languageCode]) {
+          setStatus('Preparing engine...', 'warn');
+          await prepareModels();
+        }
+
+        if (activeSession) clearBenchmarkSession();
+
+        benchmarkState.synthesisStartedAt = performance.now();
+        benchmarkState.firstSpeechAt = 0;
+        benchmarkState.warmWaitMs = null;
+
+        if (activeMode.value === 'sentence') {
+          const pieces = chunkText(text, 300);
+          if (!pieces.length) {
+            setStatus('No sentence chunks found.', 'error');
+            return;
+          }
+
+          const session = {
+            id: ++sentenceSessionToken,
+            mode: 'sentence',
+            chunks: pieces,
+            voice: voiceName,
+            lang: languageCode,
+            speed,
+            buffers: new Array(pieces.length).fill(null),
+            readyResolvers: [],
+            readyPromises: [],
+            isStopped: false,
+            isPaused: false,
+            playbackStarted: false,
+            currentPlayingIndex: 0,
+            stopActiveSource: null,
+            playbackLoopStarted: false,
+            chunkStats: []
+          };
+
+          for (let i = 0; i < pieces.length; i++) {
+            session.readyPromises[i] = new Promise(resolve => {
+              session.readyResolvers[i] = resolve;
+            });
+          }
+
+          activeSession = session;
+          updateButtonState();
+          setStatus('Sentence mode started: generating audio in background...', 'ok');
+          logMessage(`Queued ${pieces.length} chunk(s). Background synthesis started.`);
+
+          (async () => {
+            for (let i = 0; i < session.chunks.length; i++) {
+              if (session.isStopped) break;
+              const piece = session.chunks[i];
+              const start = performance.now();
+
+              try {
+                const result = await engineByLanguage[languageCode].synthesize(piece, session.speed);
+                if (session.isStopped) break;
+                const synthElapsed = performance.now() - start;
+                session.buffers[i] = result;
+                session.chunkStats.push({
+                  mode: 'chunk',
+                  index: i + 1,
+                  label: `Chunk ${i + 1}`,
+                  elapsedMs: synthElapsed,
+                  words: piece.split(/\s+/).filter(Boolean).length,
+                  samples: result.wav?.length || 0,
+                  speed: session.speed
+                });
+                benchmarkState.synthStats = session.chunkStats.slice();
+                updateBenchmarkUi();
+                if (session.readyResolvers[i]) session.readyResolvers[i](result);
+              } catch (error) {
+                session.buffers[i] = { wav: new Float32Array(0), duration: 0, sampleRate: 22050 };
+                if (session.readyResolvers[i]) session.readyResolvers[i](session.buffers[i]);
+              }
+            }
+          })();
+
+          (async () => {
+            if (session.playbackLoopStarted) return;
+            session.playbackLoopStarted = true;
+            const ctx = getAudioCtx();
+            if (ctx.state === 'suspended' && !session.isPaused) {
+              try { await ctx.resume(); } catch (e) {}
+            }
+
+            while (session.currentPlayingIndex < session.chunks.length && !session.isStopped) {
+              const idx = session.currentPlayingIndex;
+
+              while (session.isPaused && !session.isStopped) {
+                await new Promise(r => setTimeout(r, 100));
+              }
+              if (session.isStopped) break;
+
+              if (!session.buffers[idx]) {
+                setStatus(`Waiting for chunk ${idx + 1}/${session.chunks.length} to be ready...`, 'warn');
+                logMessage(`Waiting for chunk ${idx + 1} generation to finish...`);
+                await session.readyPromises[idx];
+              }
+              if (session.isStopped) break;
+
+              while (session.isPaused && !session.isStopped) {
+                await new Promise(r => setTimeout(r, 100));
+              }
+              if (session.isStopped) break;
+
+              const audioData = session.buffers[idx];
+              if (!audioData || !audioData.wav || audioData.wav.length === 0) {
+                session.currentPlayingIndex++;
+                continue;
+              }
+
+              setStatus(`Playing chunk ${idx + 1}/${session.chunks.length}...`, 'ok');
+              logMessage(`[Playing chunk ${idx + 1}/${session.chunks.length}] "${session.chunks[idx]}"`);
+              markFirstSpeechAt();
+
+              const outcome = await playChunkWithSkipSupport(session, audioData);
+              if (session.isStopped) break;
+
+              if (outcome === 'restart') {
+                session.currentPlayingIndex = 0;
+                logMessage('Replay requested from chunk 1; playback loop restarted from the beginning.');
+                continue;
+              }
+
+              if (outcome === 'skipped') {
+                session.currentPlayingIndex = idx + 1;
+                logMessage(`Skipped current chunk. Moving immediately to chunk ${session.currentPlayingIndex + 1}...`);
+                continue;
+              }
+
+              session.currentPlayingIndex = idx + 1;
+
+              if (session.currentPlayingIndex < session.chunks.length && !session.isStopped) {
+                await new Promise(r => setTimeout(r, CHUNK_GAP_SECONDS * 1000));
+              }
+            }
+
+            if (!session.isStopped && session.currentPlayingIndex >= session.chunks.length) {
+              setStatus('Sentence queue complete.', 'ok');
+              logMessage(`Finished playing all ${session.chunks.length} chunks.`);
+            }
+          })();
+
+          return;
+        }
+
+        const t0 = performance.now();
+        setStatus('Synthesizing whole paragraph...', 'warn');
+        logMessage(`Synthesizing whole paragraph with ${voiceName} (${languageCode}) at ${speed.toFixed(2)}x...`);
+        const result = await engineByLanguage[languageCode].synthesize(text, speed);
+        const synthElapsed = performance.now() - t0;
+        benchmarkState.synthStats = [{
+          mode: 'full',
+          label: 'Full paragraph',
+          elapsedMs: synthElapsed,
+          samples: result.wav?.length || 0,
+          words: text.split(/\s+/).filter(Boolean).length,
+          speed
+        }];
+        updateBenchmarkUi();
+
+        activeSession = {
+          id: ++sentenceSessionToken,
+          mode: 'paragraph',
+          voice: voiceName,
+          lang: languageCode,
+          speed,
+          chunks: [text],
+          buffers: [result],
+          isStopped: false,
+          isPaused: false,
+          playbackStarted: false,
+          currentPlayingIndex: 0,
+          stopActiveSource: null,
+          readyResolvers: [],
+          readyPromises: [],
+          playbackLoopStarted: true,
+          chunkStats: []
+        };
+
+        updateButtonState();
+        playParagraphSession(activeSession, result.wav, result.sampleRate || 22050);
+        setStatus('Whole paragraph mode: playing.', 'ok');
+        logMessage(`Rendered paragraph using ${voiceName} (${languageCode}) at ${speed.toFixed(2)}x.`);
+      }
+
+      prepareBtn.addEventListener('click', async () => {
+        if (warmupInProgress || isDownloadInProgress()) return;
+        try {
+          await prepareModels();
+        } catch (error) {
+          setStatus(error.message || 'Model preparation failed.', 'error');
+        }
+      });
+
+      playBtn.addEventListener('click', async () => {
+        if (warmupInProgress || isDownloadInProgress() || isSynthesizing() || isPlaybackActive()) return;
+        try {
+          await synthesizeCurrentText();
+        } catch (error) {
+          setStatus(error.message || 'Synthesis failed.', 'error');
+        }
+      });
+
+      playFromBeginningBtn.addEventListener('click', () => {
+        if (!activeSession || !activeSession.playbackStarted || activeSession.isStopped) {
+          setStatus('No active benchmark session to replay from the beginning.', 'warn');
+          return;
+        }
+        playFromBeginning();
+      });
+
+      pauseBtn.addEventListener('click', () => {
+        if (!isPlaybackActive()) return;
+        pausePlayback();
+      });
+
+      resumeBtn.addEventListener('click', () => {
+        if (!isPlaybackActive()) return;
+        resumePlayback();
+      });
+
+      skipBtn.addEventListener('click', () => {
+        if (!isPlaybackActive() || activeSession?.mode !== 'sentence') return;
+        skipToNextChunk();
+      });
+
+      stopBtn.addEventListener('click', () => {
+        if (!activeSession || activeSession.isStopped) return;
+        clearBenchmarkSession();
+        setStatus('Benchmark session cleared and playback stopped.', 'warn');
+        logMessage('Cleared the active synthesis session and stopped all playback.');
+      });
+
+      stopBtn.textContent = 'Clear and Stop';
+      populateLanguageOptions();
+      populateVoiceOptions(langSelect.value);
+      updateButtonState();
+      setStatus('Checking cached Piper model...', 'warn');
+      logMessage('Benchmark initialized: cache -> configure ORT -> warm selected language -> measure synthesis timing.');
+      updateBenchmarkUi();
+
+      loadLanguageCatalog().finally(() => {
+        populateLanguageOptions();
+        populateVoiceOptions(langSelect.value);
+        setTimeout(() => warmCachedModelIfAvailable(), 0);
+      });
+    </script>
+  </body>
+</html>

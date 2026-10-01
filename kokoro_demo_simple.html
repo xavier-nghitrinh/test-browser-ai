@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kokoro TTS Simple Demo</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: #111827;
+        --panel-strong: #1f2937;
+        --muted: #94a3b8;
+        --text: #e5eefb;
+        --accent: #67e8f9;
+        --accent-2: #a78bfa;
+        --border: rgba(148, 163, 184, 0.2);
+        --success: #34d399;
+        --warning: #fbbf24;
+        --danger: #f87171;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at top, #172033 0%, #0b1220 50%, #020817 100%);
+        color: var(--text);
+        font-family: Arial, Helvetica, sans-serif;
+        padding: 24px;
+      }
+
+      .card {
+        width: min(760px, 100%);
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.4);
+        padding: 24px;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(1.8rem, 3vw, 2.4rem);
+      }
+
+      .muted {
+        margin: 0 0 18px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      textarea,
+      select,
+      button {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        font: inherit;
+      }
+
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+        background: rgba(15, 23, 42, 0.7);
+        color: var(--text);
+        border-color: var(--border);
+        padding: 14px 16px;
+        margin-bottom: 16px;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      label {
+        display: block;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      select {
+        background: var(--panel-strong);
+        color: var(--text);
+        min-height: 44px;
+        padding: 10px 12px;
+      }
+
+      button {
+        appearance: none;
+        border: none;
+        cursor: pointer;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #06141d;
+        font-weight: 700;
+        padding: 12px 16px;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .status {
+        margin-top: 18px;
+        min-height: 24px;
+        color: var(--muted);
+      }
+
+      .status.error { color: var(--danger); }
+      .status.ok { color: var(--success); }
+      .status.warn { color: var(--warning); }
+
+      .log {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.8);
+        color: var(--text);
+        white-space: pre-wrap;
+        min-height: 100px;
+        max-height: 220px;
+        overflow-y: auto;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 600px) {
+        .controls {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Browser TTS Simple Demo</h1>
+      <p class="muted">
+        Generate speech in-browser with a Hugging Face ONNX text-to-speech model that is compatible
+        with the browser pipeline. This version uses the model repo that includes tokenizer and voice files.
+      </p>
+
+      <textarea id="textInput">Xin chào, đây là mẫu phát âm từ mô hình tổng hợp giọng nói trong trình duyệt.</textarea>
+
+      <div class="controls">
+        <div>
+          <label for="voiceSelect">Voice</label>
+          <select id="voiceSelect">
+            <option value="F1">F1</option>
+            <option value="F2">F2</option>
+            <option value="F3" selected>F3</option>
+            <option value="F4">F4</option>
+            <option value="F5">F5</option>
+            <option value="M1">M1</option>
+            <option value="M2">M2</option>
+            <option value="M3">M3</option>
+            <option value="M4">M4</option>
+            <option value="M5">M5</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="modelSelect">Model</label>
+          <select id="modelSelect" disabled>
+            <option value="hexgrad/Kokoro-82M">hexgrad/Kokoro-82M</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="generateBtn" type="button">Generate and play</button>
+      <div id="status" class="status">Ready.</div>
+      <div id="log" class="log">Waiting for generation.</div>
+    </div>
+
+    <script type="module">
+      import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.0';
+
+      const MODEL_ID = 'onnx-community/Supertonic-TTS-ONNX';
+      const VOICE_PATHS = {
+        F1: 'https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/F1.bin',
+        F2: 'https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/F2.bin',
+        F3: 'https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/F3.bin',
+        F4: 'https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/F4.bin',
+        F5: 'https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/F5.bin',
+        M1: 'https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/M1.bin',
+        M2: 'https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/M2.bin',
+        M3: 'https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/M3.bin',
+        M4: 'https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/M4.bin',
+        M5: 'https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/M5.bin'
+      };
+
+      const textInput = document.getElementById('textInput');
+      const voiceSelect = document.getElementById('voiceSelect');
+      const generateBtn = document.getElementById('generateBtn');
+      const statusEl = document.getElementById('status');
+      const logEl = document.getElementById('log');
+
+      let tts = null;
+      let isGenerating = false;
+
+      function setStatus(message, kind = 'info') {
+        statusEl.textContent = message;
+        statusEl.className = 'status';
+        if (kind === 'ok') statusEl.classList.add('ok');
+        if (kind === 'warn') statusEl.classList.add('warn');
+        if (kind === 'error') statusEl.classList.add('error');
+      }
+
+      function logMessage(message) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        logEl.textContent = `[${time}] ${message}\n${logEl.textContent}`;
+      }
+
+      function normalizeAudioOutput(output) {
+        if (!output) {
+          throw new Error('The TTS pipeline returned no audio output.');
+        }
+
+        if (output.audio && typeof output.audio !== 'undefined') {
+          const audio = output.audio instanceof Float32Array
+            ? output.audio
+            : new Float32Array(output.audio);
+          return {
+            audio,
+            sampleRate: Number(output.sampling_rate ?? output.sampleRate ?? 22050)
+          };
+        }
+
+        if (Array.isArray(output)) {
+          return { audio: new Float32Array(output), sampleRate: 22050 };
+        }
+
+        if (output instanceof Float32Array) {
+          return { audio: output, sampleRate: 22050 };
+        }
+
+        if (typeof output === 'object' && Array.isArray(output.data)) {
+          return { audio: new Float32Array(output.data), sampleRate: Number(output.samplingRate ?? 22050) };
+        }
+
+        throw new Error('Unsupported audio output format from the TTS pipeline.');
+      }
+
+      function floatTo16BitPCM(float32Array) {
+        const buffer = new ArrayBuffer(float32Array.length * 2);
+        const view = new DataView(buffer);
+
+        for (let i = 0; i < float32Array.length; i++) {
+          const s = Math.max(-1, Math.min(1, float32Array[i]));
+          view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+        }
+
+        return buffer;
+      }
+
+      function buildWavBlob(float32Array, sampleRate = 22050) {
+        const pcm = floatTo16BitPCM(float32Array);
+        const wavBuffer = new ArrayBuffer(44 + pcm.byteLength);
+        const view = new DataView(wavBuffer);
+
+        const writeString = (offset, string) => {
+          for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+          }
+        };
+
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + pcm.byteLength, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, pcm.byteLength, true);
+        new Uint8Array(wavBuffer, 44).set(new Uint8Array(pcm));
+
+        return new Blob([wavBuffer], { type: 'audio/wav' });
+      }
+
+      async function ensureModel() {
+        if (!tts) {
+          setStatus('Loading TTS model...', 'warn');
+          logMessage(`Loading model from ${MODEL_ID}...`);
+          tts = await pipeline('text-to-speech', MODEL_ID, {
+            dtype: 'fp32'
+          });
+          setStatus('Model loaded.', 'ok');
+          logMessage('Model loaded successfully.');
+        }
+        return tts;
+      }
+
+      async function generateAndPlay() {
+        const text = textInput.value.trim();
+        if (!text) {
+          setStatus('Please enter some text first.', 'error');
+          return;
+        }
+
+        if (isGenerating) {
+          setStatus('Generation is already in progress.', 'warn');
+          return;
+        }
+
+        isGenerating = true;
+        generateBtn.disabled = true;
+
+        try {
+          const model = await ensureModel();
+          const voice = voiceSelect.value;
+          const speaker_embeddings = VOICE_PATHS[voice];
+          setStatus(`Generating speech with voice ${voice}...`, 'warn');
+          logMessage(`Generating: ${text.substring(0, 120)}${text.length > 120 ? '...' : ''} using voice ${voice}.`);
+
+          const start = performance.now();
+          const output = await model(text, { speaker_embeddings });
+          const elapsed = performance.now() - start;
+          const { audio, sampleRate } = normalizeAudioOutput(output);
+          const blob = buildWavBlob(audio, sampleRate);
+          const audioUrl = URL.createObjectURL(blob);
+          const player = new Audio(audioUrl);
+
+          player.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            setStatus('Playback finished.', 'ok');
+            logMessage(`Audio finished after ${elapsed.toFixed(0)} ms generation time.`);
+            isGenerating = false;
+            generateBtn.disabled = false;
+          };
+
+          player.onerror = () => {
+            URL.revokeObjectURL(audioUrl);
+            setStatus('Audio playback failed.', 'error');
+            logMessage('The generated audio could not be played in the browser.');
+            isGenerating = false;
+            generateBtn.disabled = false;
+          };
+
+          setStatus('Playing generated speech...', 'ok');
+          logMessage(`Generation completed in ${elapsed.toFixed(0)} ms. Starting playback.`);
+          await player.play();
+        } catch (error) {
+          console.error(error);
+          setStatus(error.message || 'Generation failed.', 'error');
+          logMessage(`Error: ${error.message || error}`);
+          isGenerating = false;
+          generateBtn.disabled = false;
+        }
+      }
+
+      generateBtn.addEventListener('click', generateAndPlay);
+    </script>
+  </body>
+</html>

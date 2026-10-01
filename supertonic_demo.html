@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Supertonic TTS Benchmark</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1220;
+        --panel: #111827;
+        --panel-strong: #0f172a;
+        --border: #334155;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --accent: #38bdf8;
+        --accent-2: #8b5cf6;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --danger: #f87171;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(180deg, var(--bg), #020817);
+        color: var(--text);
+        padding: 20px 0 32px;
+      }
+
+      .card {
+        width: min(960px, calc(100vw - 24px));
+        margin: 0 auto;
+        background: rgba(17, 24, 39, 0.96);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: 26px;
+      }
+
+      .muted {
+        margin: 0 0 18px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .segmented {
+        display: inline-flex;
+        gap: 8px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 6px;
+        margin-bottom: 14px;
+      }
+
+      .mode-btn {
+        appearance: none;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--muted);
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .mode-btn.active {
+        background: rgba(56, 189, 248, 0.12);
+        border-color: rgba(56, 189, 248, 0.4);
+        color: var(--text);
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 180px;
+        resize: vertical;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        background: var(--panel-strong);
+        color: var(--text);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      label {
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      select,
+      input[type="range"] {
+        width: 100%;
+      }
+
+      select {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--panel-strong);
+        color: var(--text);
+        min-height: 42px;
+        padding: 8px 10px;
+      }
+
+      .range-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .range-row output {
+        min-width: 54px;
+        text-align: right;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      button {
+        appearance: none;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 16px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .primary {
+        background: var(--accent);
+        color: #02243d;
+      }
+
+      .secondary {
+        background: #1e293b;
+        color: var(--text);
+      }
+
+      .warning {
+        background: var(--warning);
+        color: #1f2937;
+      }
+
+      .status {
+        margin-top: 16px;
+        min-height: 24px;
+        color: var(--muted);
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .status.ok {
+        color: var(--success);
+      }
+
+      .status.warn {
+        color: var(--warning);
+      }
+
+      .voice-info {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .log {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.8);
+        color: var(--text);
+        white-space: pre-wrap;
+        min-height: 80px;
+        max-height: 180px;
+        overflow-y: auto;
+        line-height: 1.5;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .stat-card {
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+
+      .stat-label {
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .stat-value {
+        margin-top: 8px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .progress-track {
+        margin-top: 8px;
+        width: 100%;
+        height: 10px;
+        background: rgba(148, 163, 184, 0.18);
+        border-radius: 999px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+
+      .progress-bar {
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        border-radius: inherit;
+        transition: width 0.2s ease;
+      }
+
+      .benchmark-details {
+        margin-top: 12px;
+        color: var(--muted);
+        line-height: 1.6;
+        min-height: 24px;
+        white-space: pre-line;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Supertonic TTS Benchmark</h1>
+      <p class="muted">
+        Measure model download time, warm-memory footprint, warm-to-first-speech latency,
+        and per-chunk synthesis timing for the browser-based Supertonic pipeline.
+      </p>
+
+      <div class="segmented" aria-label="Synthesis mode selector">
+        <button type="button" class="mode-btn active" data-mode="paragraph">Whole paragraph</button>
+        <button type="button" class="mode-btn" data-mode="sentence">Sentence by sentence</button>
+      </div>
+
+      <textarea id="textInput">Hello there. This is a browser-based Supertonic benchmark. We process the text locally, warm the model, and measure download, memory, wait, and synthesis timing for each generated chunk.</textarea>
+
+      <div class="controls">
+        <div class="field">
+          <label for="voiceSelect">Voice</label>
+          <select id="voiceSelect"></select>
+        </div>
+
+        <div class="field">
+          <label for="langSelect">Language</label>
+          <select id="langSelect"></select>
+        </div>
+
+        <div class="field">
+          <label for="speedSlider">Speed</label>
+          <div class="range-row">
+            <input id="speedSlider" type="range" min="0.8" max="1.6" step="0.05" value="1.05" />
+            <output id="speedValue" for="speedSlider">1.05x</output>
+          </div>
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button id="prepareBtn" class="warning" type="button">Prepare models</button>
+        <button id="playBtn" class="primary" type="button">Synthesize</button>
+        <button id="playFromBeginningBtn" class="secondary" type="button">Play from beginning</button>
+        <button id="pauseBtn" class="secondary" type="button">Pause</button>
+        <button id="resumeBtn" class="secondary" type="button">Resume</button>
+        <button id="skipBtn" class="secondary" type="button">Skip to next chunk</button>
+        <button id="stopBtn" class="secondary" type="button">Stop</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Model download</div>
+          <div id="downloadMetric" class="stat-value">--</div>
+          <div class="progress-track"><div id="downloadProgressBar" class="progress-bar"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Warm JS heap used</div>
+          <div id="memoryMetric" class="stat-value">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Browser heap cap</div>
+          <div id="heapLimitMetric" class="stat-value">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Warm up time</div>
+          <div id="warmUpMetric" class="stat-value">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Start → first speech</div>
+          <div id="warmWaitMetric" class="stat-value">--</div>
+        </div>
+      </div>
+
+      <div id="benchmarkDetails" class="benchmark-details">Benchmark data will appear here.</div>
+
+      <div id="status" class="status">Waiting for model setup.</div>
+      <div id="voiceInfo" class="voice-info"></div>
+      <div id="log" class="log">Ready.</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.all.min.js"></script>
+    <script>
+      const MODEL_BASE_URL = 'https://huggingface.co/Supertone/supertonic-3/resolve/main/';
+      const CACHE_NAME = 'supertonic-benchmark-v1';
+      const MODEL_FILES = [
+        'onnx/duration_predictor.onnx',
+        'onnx/text_encoder.onnx',
+        'onnx/vector_estimator.onnx',
+        'onnx/vocoder.onnx',
+        'onnx/tts.json',
+        'onnx/unicode_indexer.json'
+      ];
+
+      const SUPPORTED_LANGUAGES = [
+        { code: 'na', label: 'Auto-detect (na)', sample: 'This is a multilingual sample for language-agnostic synthesis.' },
+        { code: 'ar', label: 'العربية (ar)', sample: 'هذا نص تجريبي لاختبار نطق اللغة العربية بشكل طبيعي.' },
+        { code: 'bg', label: 'Български (bg)', sample: 'Това е примерен текст за проверка на българския синтез на реч.' },
+        { code: 'hr', label: 'Hrvatski (hr)', sample: 'Ovo je primjer teksta za provjeru hrvatskog govornog sinteze.' },
+        { code: 'cs', label: 'Čeština (cs)', sample: 'Toto je ukázkový text pro ověření českého syntézy řeči.' },
+        { code: 'da', label: 'Dansk (da)', sample: 'Dette er en eksempeltekst til test af dansk taleproduktion.' },
+        { code: 'nl', label: 'Nederlands (nl)', sample: 'Dit is een voorbeeldtekst om de Nederlandse spraaksynthetisatie te testen.' },
+        { code: 'en', label: 'English (en)', sample: 'This morning, I took a walk in the park and enjoyed the sound of birds and wind.' },
+        { code: 'et', label: 'Eesti (et)', sample: 'See on näidistekst eesti keele häälesünteesi testimiseks.' },
+        { code: 'fi', label: 'Suomi (fi)', sample: 'Tämä on esimerkkiteksti suomenkielisen puhesynteesin testaamiseen.' },
+        { code: 'fr', label: 'Français (fr)', sample: 'Voici un texte d’exemple pour tester la synthèse vocale en français.' },
+        { code: 'de', label: 'Deutsch (de)', sample: 'Dies ist ein Beispieltext zum Testen der deutschen Sprachsynthese.' },
+        { code: 'el', label: 'Ελληνικά (el)', sample: 'Αυτό είναι ένα δείγμα κειμένου για τη δοκιμή της ελληνικής σύνθεσης ομιλίας.' },
+        { code: 'hi', label: 'हिन्दी (hi)', sample: 'यह एक उदाहरण पाठ है जो हिन्दी बोलने की संश्लेषण क्षमता को जाँचता है।' },
+        { code: 'hu', label: 'Magyar (hu)', sample: 'Ez egy példaszöveg a magyar beszédszintézis tesztelésére.' },
+        { code: 'id', label: 'Bahasa Indonesia (id)', sample: 'Ini adalah contoh teks untuk menguji sintesis suara dalam bahasa Indonesia.' },
+        { code: 'it', label: 'Italiano (it)', sample: 'Questo è un testo di esempio per provare la sintesi vocale italiana.' },
+        { code: 'ja', label: '日本語 (ja)', sample: 'これは日本語の音声合成をテストするためのサンプルテキストです。' },
+        { code: 'ko', label: '한국어 (ko)', sample: '이 문장은 한국어 음성 합성을 테스트하기 위한 예시 텍스트입니다.' },
+        { code: 'lv', label: 'Latviešu (lv)', sample: 'Šis ir piemēru teksta paraugs latviešu valodas sintēzes pārbaudei.' },
+        { code: 'lt', label: 'Lietuvių (lt)', sample: 'Tai yra pavyzdinis tekstas lietuvių kalbos balso sintezės testavimui.' },
+        { code: 'pl', label: 'Polski (pl)', sample: 'To jest przykładowy tekst do testowania polskiej syntezy mowy.' },
+        { code: 'pt', label: 'Português (pt)', sample: 'Este é um texto de exemplo para testar a síntese de voz em português.' },
+        { code: 'ro', label: 'Română (ro)', sample: 'Acesta este un text de exemplu pentru testarea sintezei vocale în română.' },
+        { code: 'ru', label: 'Русский (ru)', sample: 'Это пример текста для проверки русской синтеза речи.' },
+        { code: 'sk', label: 'Slovenčina (sk)', sample: 'Toto je ukážkový text na testovanie slovenskej syntézy reči.' },
+        { code: 'sl', label: 'Slovenščina (sl)', sample: 'To je vzorčno besedilo za testiranje slovenske sinteze govora.' },
+        { code: 'es', label: 'Español (es)', sample: 'Este es un texto de ejemplo para probar la síntesis de voz en español.' },
+        { code: 'sv', label: 'Svenska (sv)', sample: 'Detta är exempeltext för att testa svensk talsyntes.' },
+        { code: 'tr', label: 'Türkçe (tr)', sample: 'Bu, Türkçe konuşma sentezi testleri için örnek bir metindir.' },
+        { code: 'uk', label: 'Українська (uk)', sample: 'Це приклад тексту для перевірки українського синтезу мови.' },
+        { code: 'vi', label: 'Tiếng Việt (vi)', sample: 'Đây là văn bản mẫu để kiểm tra tổng hợp giọng nói tiếng Việt.' }
+      ];
+
+      const SUPPORTED_VOICES = [
+        { value: 'M1', label: 'Male 1 (M1)', file: 'voice_styles/M1.json' },
+        { value: 'M2', label: 'Male 2 (M2)', file: 'voice_styles/M2.json' },
+        { value: 'M3', label: 'Male 3 (M3)', file: 'voice_styles/M3.json' },
+        { value: 'M4', label: 'Male 4 (M4)', file: 'voice_styles/M4.json' },
+        { value: 'M5', label: 'Male 5 (M5)', file: 'voice_styles/M5.json' },
+        { value: 'F1', label: 'Female 1 (F1)', file: 'voice_styles/F1.json' },
+        { value: 'F2', label: 'Female 2 (F2)', file: 'voice_styles/F2.json' },
+        { value: 'F3', label: 'Female 3 (F3)', file: 'voice_styles/F3.json' },
+        { value: 'F4', label: 'Female 4 (F4)', file: 'voice_styles/F4.json' },
+        { value: 'F5', label: 'Female 5 (F5)', file: 'voice_styles/F5.json' }
+      ];
+
+      const VOICE_STYLE_FILES = Object.fromEntries(SUPPORTED_VOICES.map(v => [v.value, v.file]));
+
+      const PLAYBACK_SPEED = 1.40;
+      const CHUNK_GAP_SECONDS = 1;
+
+      const voiceSelect = document.getElementById('voiceSelect');
+      const langSelect = document.getElementById('langSelect');
+      const textInput = document.getElementById('textInput');
+      const statusEl = document.getElementById('status');
+      const voiceInfoEl = document.getElementById('voiceInfo');
+      const logEl = document.getElementById('log');
+      const speedSlider = document.getElementById('speedSlider');
+      const speedValue = document.getElementById('speedValue');
+      const playBtn = document.getElementById('playBtn');
+      const playFromBeginningBtn = document.getElementById('playFromBeginningBtn');
+      const prepareBtn = document.getElementById('prepareBtn');
+      const pauseBtn = document.getElementById('pauseBtn');
+      const resumeBtn = document.getElementById('resumeBtn');
+      const skipBtn = document.getElementById('skipBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const downloadMetric = document.getElementById('downloadMetric');
+      const memoryMetric = document.getElementById('memoryMetric');
+      const heapLimitMetric = document.getElementById('heapLimitMetric');
+      const warmUpMetric = document.getElementById('warmUpMetric');
+      const warmWaitMetric = document.getElementById('warmWaitMetric');
+      const benchmarkDetails = document.getElementById('benchmarkDetails');
+      const downloadProgressBar = document.getElementById('downloadProgressBar');
+
+      const activeMode = { value: 'paragraph' };
+      const modeButtons = Array.from(document.querySelectorAll('.mode-btn'));
+      let engine = null;
+      let audioCtx = null;
+      let warmupInProgress = false;
+      let scheduledSources = [];
+      let nextPlaybackTime = 0;
+      let sentenceSessionToken = 0;
+      let isPaused = false;
+      let activeSession = null;
+      const benchmarkState = {
+        downloadStartedAt: 0,
+        downloadCompleteAt: 0,
+        downloadedBytes: 0,
+        totalBytes: 0,
+        warmReadyAt: 0,
+        warmupMs: null,
+        synthesisStartedAt: 0,
+        firstSpeechAt: 0,
+        warmWaitMs: null,
+        synthStats: [],
+        memoryUsage: null
+      };
+
+      function populateLanguageOptions() {
+        langSelect.innerHTML = '';
+        for (const language of SUPPORTED_LANGUAGES) {
+          const option = document.createElement('option');
+          option.value = language.code;
+          option.textContent = language.label;
+          langSelect.appendChild(option);
+        }
+        langSelect.value = 'en';
+        updateSampleTextForLanguage('en');
+      }
+
+      function populateVoiceOptions() {
+        voiceSelect.innerHTML = '';
+        for (const voice of SUPPORTED_VOICES) {
+          const option = document.createElement('option');
+          option.value = voice.value;
+          option.textContent = `Supertonic ${voice.label}`;
+          voiceSelect.appendChild(option);
+        }
+        voiceSelect.value = 'F3';
+      }
+
+      function updateSampleTextForLanguage(languageCode) {
+        const language = SUPPORTED_LANGUAGES.find(item => item.code === languageCode) || SUPPORTED_LANGUAGES[0];
+        textInput.value = language.sample;
+      }
+
+      populateLanguageOptions();
+      populateVoiceOptions();
+
+      async function warmCachedModelIfAvailable() {
+        if (warmupInProgress || engine) return engine;
+        if (typeof ort === 'undefined' || typeof caches === 'undefined') {
+          setStatus('ONNX Runtime Web is not loaded yet.', 'warn');
+          return null;
+        }
+
+        warmupInProgress = true;
+        updateButtonState();
+        try {
+          const cache = await caches.open(CACHE_NAME);
+          const coreFiles = MODEL_FILES;
+          let hasCoreModel = true;
+
+          for (const file of coreFiles) {
+            const cached = await cache.match(MODEL_BASE_URL + file);
+            if (!cached) {
+              hasCoreModel = false;
+              break;
+            }
+          }
+
+          if (!hasCoreModel) {
+            setStatus('Model cache not found yet. Click Prepare models to download.', 'warn');
+            return null;
+          }
+
+          setStatus('Warmup: loading cached Supertonic model...', 'warn');
+          const warmStart = performance.now();
+          engine = await TextToSpeech.load();
+          benchmarkState.warmReadyAt = performance.now();
+          benchmarkState.warmupMs = benchmarkState.warmReadyAt - warmStart;
+          setMemoryUsage();
+          voiceInfoEl.textContent = 'Cached model warmup complete. The model is ready to synthesize immediately.';
+          setStatus('Cached Supertonic model warm and ready.', 'ok');
+          logMessage(`Cached model detected and warmed on page load in ${benchmarkState.warmupMs.toFixed(0)} ms.`);
+          updateButtonState();
+          updateBenchmarkUi();
+          return engine;
+        } catch (err) {
+          setStatus('Cached warmup failed. Click Prepare models to download.', 'error');
+          return null;
+        } finally {
+          warmupInProgress = false;
+          updateButtonState();
+        }
+      }
+
+      langSelect.addEventListener('change', (event) => {
+        updateSampleTextForLanguage(event.target.value);
+      });
+
+      speedSlider.value = String(PLAYBACK_SPEED);
+      speedValue.textContent = `${PLAYBACK_SPEED.toFixed(2)}x`;
+      speedSlider.addEventListener('input', () => {
+        speedValue.textContent = Number(speedSlider.value).toFixed(2) + 'x';
+      });
+
+      modeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          if (isStreamActive() || warmupInProgress || isDownloadInProgress()) {
+            return;
+          }
+          modeButtons.forEach(b => b.classList.toggle('active', b === button));
+          activeMode.value = button.dataset.mode;
+          logEl.textContent = `Mode: ${activeMode.value === 'paragraph' ? 'whole paragraph' : 'sentence by sentence'}`;
+          updateButtonState();
+        });
+      });
+
+      function setStatus(message, kind = 'info') {
+        statusEl.textContent = message;
+        statusEl.className = 'status';
+        if (kind === 'ok') statusEl.classList.add('ok');
+        if (kind === 'error') statusEl.classList.add('error');
+        if (kind === 'warn') statusEl.classList.add('warn');
+      }
+
+      function logMessage(message) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        logEl.textContent = `[${time}] ${message}\n${logEl.textContent}`;
+      }
+
+      function formatBytes(bytes) {
+        if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let value = bytes;
+        let unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+          value /= 1024;
+          unitIndex += 1;
+        }
+        return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+      }
+
+      function updateBenchmarkUi() {
+        const downloadPct = benchmarkState.totalBytes > 0 ? Math.min(100, (benchmarkState.downloadedBytes / benchmarkState.totalBytes) * 100) : 0;
+        downloadMetric.textContent = benchmarkState.totalBytes > 0
+          ? `${formatBytes(benchmarkState.downloadedBytes)} / ${formatBytes(benchmarkState.totalBytes)} (${downloadPct.toFixed(0)}%)`
+          : '--';
+        downloadProgressBar.style.width = `${downloadPct}%`;
+
+        if (benchmarkState.memoryUsage) {
+          const used = benchmarkState.memoryUsage.usedJsHeapSize || benchmarkState.memoryUsage.used || 0;
+          const limit = benchmarkState.memoryUsage.jsHeapSizeLimit || benchmarkState.memoryUsage.limit || 0;
+          memoryMetric.textContent = `${formatBytes(used)} used`;
+          heapLimitMetric.textContent = limit > 0 ? formatBytes(limit) : '--';
+          memoryMetric.title = 'JS heap usage for the warmed model and page.';
+          heapLimitMetric.title = 'Browser heap cap for this tab; not the same as actual in-use memory.';
+        } else {
+          memoryMetric.textContent = '--';
+          heapLimitMetric.textContent = '--';
+          memoryMetric.title = '';
+          heapLimitMetric.title = '';
+        }
+
+        if (benchmarkState.warmupMs !== null && Number.isFinite(benchmarkState.warmupMs)) {
+          warmUpMetric.textContent = `${benchmarkState.warmupMs.toFixed(0)} ms`;
+        } else {
+          warmUpMetric.textContent = '--';
+        }
+
+        if (benchmarkState.warmWaitMs !== null && Number.isFinite(benchmarkState.warmWaitMs)) {
+          warmWaitMetric.textContent = `${benchmarkState.warmWaitMs.toFixed(0)} ms`;
+        } else {
+          warmWaitMetric.textContent = '--';
+        }
+
+        if (benchmarkState.synthStats.length) {
+          benchmarkDetails.textContent = benchmarkState.synthStats.map((entry) => {
+            if (entry.mode === 'full') {
+              return `Full synthesis: ${entry.elapsedMs.toFixed(0)} ms @ ${entry.speed}x, samples=${entry.samples}`;
+            }
+            return `Chunk ${entry.index}: ${entry.elapsedMs.toFixed(0)} ms, ${entry.words} words, samples=${entry.samples}`;
+          }).join('\n');
+        } else {
+          benchmarkDetails.textContent = 'Benchmark data will appear here.';
+        }
+      }
+
+      function setMemoryUsage() {
+        const mem = performance.memory;
+        if (!mem) return;
+        benchmarkState.memoryUsage = {
+          usedJsHeapSize: mem.usedJSHeapSize,
+          jsHeapSizeLimit: mem.jsHeapSizeLimit,
+          totalJsHeapSize: mem.totalJSHeapSize
+        };
+        updateBenchmarkUi();
+      }
+
+      function markFirstSpeechAt() {
+        if (activeSession) {
+          activeSession.playbackStarted = true;
+        }
+
+        if (benchmarkState.firstSpeechAt) return;
+        benchmarkState.firstSpeechAt = performance.now();
+        if (benchmarkState.synthesisStartedAt) {
+          benchmarkState.warmWaitMs = benchmarkState.firstSpeechAt - benchmarkState.synthesisStartedAt;
+        } else if (benchmarkState.warmReadyAt) {
+          benchmarkState.warmWaitMs = benchmarkState.firstSpeechAt - benchmarkState.warmReadyAt;
+        }
+        updateButtonState();
+        updateBenchmarkUi();
+      }
+
+      function logChunkText(index, text, label = 'chunk') {
+        // Debug chunk logging intentionally disabled to keep the benchmark UI clean.
+      }
+
+      function chunkText(text, maxLen = 300) {
+        const raw = text.trim();
+        if (!raw) return [];
+
+        const rawSentences = raw
+          .split(/(?<!Mr\.|Mrs\.|Ms\.|Dr\.|Prof\.|Sr\.|Jr\.|Ph\.D\.|etc\.|e\.g\.|i\.e\.|vs\.|Inc\.|Ltd\.|Co\.|Corp\.|St\.|Ave\.|Blvd\.)(?<!\b[A-Z]\.)(?<!\b\d+)(?<=[.!?])\s+|\n+/)
+          .map(s => s.trim())
+          .filter(Boolean);
+
+        if (!rawSentences.length) return [raw];
+
+        const MIN_WORDS = 15;
+        const chunks = [];
+        let current = '';
+
+        for (let i = 0; i < rawSentences.length; i++) {
+          const s = rawSentences[i];
+          current = current ? (current + ' ' + s) : s;
+          const words = current.split(/\s+/).filter(Boolean).length;
+
+          if (words >= MIN_WORDS || current.length >= maxLen) {
+            chunks.push(current);
+            current = '';
+          }
+        }
+
+        if (current) {
+          const words = current.split(/\s+/).filter(Boolean).length;
+          if (chunks.length > 0 && words < MIN_WORDS) {
+            chunks[chunks.length - 1] = (chunks[chunks.length - 1] + ' ' + current).trim();
+          } else {
+            chunks.push(current);
+          }
+        }
+
+        return chunks.length ? chunks : [raw];
+      }
+
+      function getAudioCtx() {
+        if (!audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new Ctx({ latencyHint: 'interactive', sampleRate: 44100 });
+        }
+        if (audioCtx.state === 'suspended' && !isPaused) {
+          try { audioCtx.resume(); } catch (e) {}
+        }
+        return audioCtx;
+      }
+
+      function stopPlayback(clearSession = true) {
+        if (activeSession) {
+          activeSession.isStopped = true;
+          if (activeSession.stopActiveSource) {
+            activeSession.stopActiveSource('stopped');
+          }
+          if (activeSession.readyResolvers) {
+            activeSession.readyResolvers.forEach(r => r && r(null));
+          }
+        }
+
+        for (const src of scheduledSources) {
+          try { src.onended = null; src.stop(); } catch (e) {}
+        }
+        scheduledSources = [];
+        nextPlaybackTime = 0;
+
+        if (audioCtx && audioCtx.state === 'running') {
+          try { audioCtx.suspend(); } catch (e) {}
+        }
+
+        if (clearSession) {
+          activeSession = null;
+        }
+      }
+
+      function clearBenchmarkSession() {
+        stopPlayback(true);
+        isPaused = false;
+        updateButtonState();
+      }
+
+      function isDownloadInProgress() {
+        return benchmarkState.downloadStartedAt > 0 && benchmarkState.downloadCompleteAt === 0;
+      }
+
+      function isStreamActive() {
+        return isSynthesizing() || isPlaybackActive();
+      }
+
+      function isSynthesizing() {
+        return !!activeSession && !activeSession.isStopped && activeSession.playbackStarted === false;
+      }
+
+      function isPlaybackActive() {
+        return !!activeSession && !activeSession.isStopped && activeSession.playbackStarted === true;
+      }
+
+      function updateButtonState() {
+        const preparing = warmupInProgress || isDownloadInProgress();
+        const hasReadyEngine = !!engine && !warmupInProgress;
+        const synthesizing = isSynthesizing();
+        const playbackActive = isPlaybackActive();
+
+        prepareBtn.disabled = !!engine || preparing;
+        if (engine) {
+          prepareBtn.title = 'Model already loaded and cached. Use Synthesize to play.';
+        } else if (warmupInProgress) {
+          prepareBtn.title = 'Model warmup is already in progress.';
+        } else if (isDownloadInProgress()) {
+          prepareBtn.title = 'Model files are currently downloading.';
+        } else {
+          prepareBtn.title = 'Download and cache the Supertonic model files.';
+        }
+
+        playBtn.disabled = !hasReadyEngine || preparing || synthesizing || playbackActive;
+        playBtn.title = hasReadyEngine && !preparing && !synthesizing && !playbackActive
+          ? 'Synthesize the current text.'
+          : 'Wait for the current warmup or stream to finish.';
+
+        playFromBeginningBtn.disabled = !playbackActive;
+        pauseBtn.disabled = !playbackActive || isPaused;
+        resumeBtn.disabled = !playbackActive || !isPaused;
+        skipBtn.disabled = !playbackActive || activeSession?.mode !== 'sentence';
+        stopBtn.disabled = !activeSession || activeSession.isStopped;
+
+        modeButtons.forEach((button) => {
+          const allowed = !preparing && !synthesizing && !playbackActive && hasReadyEngine;
+          button.disabled = !allowed;
+        });
+      }
+
+      function pausePlayback() {
+        isPaused = true;
+        if (activeSession) {
+          activeSession.isPaused = true;
+        }
+        if (audioCtx && audioCtx.state === 'running') {
+          try { audioCtx.suspend(); } catch (e) {}
+        }
+        updateButtonState();
+        setStatus('Playback paused.', 'warn');
+        logMessage('Playback paused.');
+      }
+
+      function resumePlayback() {
+        isPaused = false;
+        if (activeSession) {
+          activeSession.isPaused = false;
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          try { audioCtx.resume(); } catch (e) {}
+        }
+        updateButtonState();
+        setStatus('Playback resumed.', 'ok');
+        logMessage('Playback resumed.');
+      }
+
+      function skipToNextChunk() {
+        if (!activeSession || activeSession.isStopped) {
+          setStatus('No active sentence playback to skip.', 'warn');
+          return;
+        }
+
+        if (activeSession.currentPlayingIndex >= activeSession.chunks.length - 1) {
+          setStatus('Already on the last chunk; cannot skip further.', 'warn');
+          return;
+        }
+
+        const currentIdx = activeSession.currentPlayingIndex;
+        logMessage(`Skip to next chunk requested: stopping chunk ${currentIdx + 1} to play chunk ${currentIdx + 2}.`);
+        setStatus(`Skipping to chunk ${currentIdx + 2}/${activeSession.chunks.length}...`, 'warn');
+
+        if (activeSession.stopActiveSource) {
+          activeSession.stopActiveSource('skipped');
+        } else {
+          activeSession.currentPlayingIndex++;
+        }
+      }
+
+      function playFromBeginning() {
+        if (!activeSession || activeSession.isStopped || !activeSession.playbackStarted) {
+          setStatus('No current synthesis session to replay from the start.', 'warn');
+          return;
+        }
+
+        activeSession.isPaused = false;
+        activeSession.currentPlayingIndex = 0;
+
+        if (activeSession.mode === 'paragraph') {
+          const paragraphAudio = activeSession.buffers && activeSession.buffers[0];
+          if (paragraphAudio && paragraphAudio.wav && paragraphAudio.wav.length > 0) {
+            if (activeSession.stopActiveSource) {
+              activeSession.stopActiveSource('restart');
+            }
+            playParagraphSession(activeSession, paragraphAudio.wav, paragraphAudio.sampleRate || engine.sampleRate);
+            setStatus('Replay from beginning. Paragraph playback restarted.', 'ok');
+            logMessage('Replay requested from the beginning of the paragraph buffer.');
+          }
+          return;
+        }
+
+        if (activeSession.stopActiveSource) {
+          activeSession.stopActiveSource('restart');
+        }
+        setStatus('Replay from beginning. Background synthesis continues.', 'ok');
+        logMessage('Replay requested from chunk 1 while background generation keeps running.');
+      }
+
+      function playParagraphSession(session, wav, sampleRate) {
+        if (!wav || wav.length === 0) return;
+        session.playbackStarted = true;
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended' && !session.isPaused) {
+          try { ctx.resume(); } catch (e) {}
+        }
+
+        const buffer = ctx.createBuffer(1, wav.length, sampleRate || 44100);
+        const channel = buffer.getChannelData(0);
+
+        let maxValue = 0;
+        for (let i = 0; i < wav.length; i++) {
+          const abs = Math.abs(wav[i]);
+          if (abs > maxValue) maxValue = abs;
+        }
+
+        if (maxValue > 0) {
+          const scale = 0.9 / Math.max(maxValue, 0.01);
+          for (let i = 0; i < wav.length; i++) channel[i] = wav[i] * scale;
+        } else {
+          channel.fill(0);
+        }
+
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        src.playbackRate.value = PLAYBACK_SPEED;
+        src.connect(ctx.destination);
+
+        scheduledSources.push(src);
+        session.stopActiveSource = (reason) => {
+          try { src.stop(); } catch (e) {}
+          scheduledSources = scheduledSources.filter(item => item !== src);
+          session.stopActiveSource = null;
+        };
+
+        src.onended = () => {
+          scheduledSources = scheduledSources.filter(item => item !== src);
+          if (session.stopActiveSource) {
+            session.stopActiveSource = null;
+          }
+        };
+
+        markFirstSpeechAt();
+        src.start();
+      }
+
+      function playChunkWithSkipSupport(session, audioData) {
+        return new Promise((resolve) => {
+          const ctx = getAudioCtx();
+          if (ctx.state === 'suspended' && !session.isPaused) {
+            try { ctx.resume(); } catch (e) {}
+          }
+
+          const wav = audioData.wav;
+          const sampleRate = audioData.sampleRate || (engine ? engine.sampleRate : 44100);
+
+          const buffer = ctx.createBuffer(1, wav.length, sampleRate);
+          const channel = buffer.getChannelData(0);
+
+          let maxValue = 0;
+          for (let i = 0; i < wav.length; i++) {
+            const abs = Math.abs(wav[i]);
+            if (abs > maxValue) maxValue = abs;
+          }
+          if (maxValue > 0) {
+            const scale = 0.9 / Math.max(maxValue, 0.01);
+            for (let i = 0; i < wav.length; i++) channel[i] = wav[i] * scale;
+          } else {
+            channel.fill(0);
+          }
+
+          const src = ctx.createBufferSource();
+          src.buffer = buffer;
+          src.playbackRate.value = PLAYBACK_SPEED;
+          src.connect(ctx.destination);
+
+          scheduledSources.push(src);
+
+          let done = false;
+          const cleanupAndResolve = (reason) => {
+            if (done) return;
+            done = true;
+            scheduledSources = scheduledSources.filter(s => s !== src);
+            session.stopActiveSource = null;
+            src.onended = null;
+            resolve(reason);
+          };
+
+          src.onended = () => {
+            cleanupAndResolve('completed');
+          };
+
+          session.stopActiveSource = (reason) => {
+            try { src.stop(); } catch (e) {}
+            cleanupAndResolve(reason);
+          };
+
+          if (session.isStopped) {
+            cleanupAndResolve('stopped');
+            return;
+          }
+
+          src.start();
+        });
+      }
+
+      function playWav(wav, sampleRate) {
+        if (!wav || wav.length === 0) {
+          setStatus('No audio generated.', 'error');
+          return;
+        }
+
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended' && !isPaused) {
+          try { ctx.resume(); } catch (e) {}
+        }
+
+        const buffer = ctx.createBuffer(1, wav.length, sampleRate || 44100);
+        const channel = buffer.getChannelData(0);
+
+        let maxValue = 0;
+        for (let i = 0; i < wav.length; i++) {
+          const abs = Math.abs(wav[i]);
+          if (abs > maxValue) maxValue = abs;
+        }
+
+        if (maxValue > 0) {
+          const scale = 0.9 / Math.max(maxValue, 0.01);
+          for (let i = 0; i < wav.length; i++) channel[i] = wav[i] * scale;
+        } else {
+          channel.fill(0);
+        }
+
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        src.playbackRate.value = PLAYBACK_SPEED;
+        src.connect(ctx.destination);
+
+        scheduledSources.push(src);
+        src.onended = () => {
+          scheduledSources = scheduledSources.filter(item => item !== src);
+        };
+        markFirstSpeechAt();
+        src.start();
+      }
+
+      class UnicodeProcessor {
+        constructor(indexer) {
+          this.indexer = indexer;
+        }
+
+        preprocessText(text, lang) {
+          text = text.normalize('NFKD');
+          text = text.replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, '');
+          const replacements = {
+            '–': '-', '—': '-', '“': '"', '”': '"', '‘': "'", '’': "'",
+            '…': '...', '—': ' ', '→': ' ', '←': ' ', '/': ' ', '#': ' ', '@': ' at '
+          };
+          Object.entries(replacements).forEach(([k, v]) => {
+            text = text.split(k).join(v);
+          });
+          text = text.replace(/\s+/g, ' ').trim();
+          if (!/[.!?;:'"\)\]}…]$/.test(text)) text += '.';
+          return `<${lang}>${text}</${lang}>`;
+        }
+
+        call(textList, langList) {
+          const processed = textList.map((item, i) => this.preprocessText(item, langList[i]));
+          const lengths = processed.map(text => text.length);
+          const maxLen = Math.max(...lengths, 1);
+          const textIds = processed.map(text => {
+            const chars = Array.from(text);
+            const row = new Array(maxLen).fill(0);
+            for (let j = 0; j < chars.length; j++) {
+              const code = chars[j].codePointAt(0);
+              row[j] = this.indexer[code] ?? 0;
+            }
+            return row;
+          });
+
+          const textMask = lengths.map(len => {
+            const row = new Array(maxLen).fill(0.0);
+            for (let j = 0; j < Math.min(len, maxLen); j++) row[j] = 1.0;
+            return [row];
+          });
+
+          return { textIds, textMask };
+        }
+      }
+
+      class Style {
+        constructor(ttlData, ttlDims, dpData, dpDims) {
+          this.ttlData = ttlData;
+          this.ttlDims = ttlDims;
+          this.dpData = dpData;
+          this.dpDims = dpDims;
+        }
+      }
+
+      class TextToSpeech {
+        constructor(cfgs, textProcessor, dpOrt, textEncOrt, vectorEstOrt, vocoderOrt) {
+          this.cfgs = cfgs;
+          this.textProcessor = textProcessor;
+          this.dpOrt = dpOrt;
+          this.textEncOrt = textEncOrt;
+          this.vectorEstOrt = vectorEstOrt;
+          this.vocoderOrt = vocoderOrt;
+          this.sampleRate = cfgs.ae.sample_rate;
+          this.styleCache = new Map();
+        }
+
+        static async load() {
+          const cache = await caches.open(CACHE_NAME);
+          const fetchCached = async (file) => {
+            const url = MODEL_BASE_URL + file;
+            const cached = await cache.match(url);
+            if (cached) return cached;
+            throw new Error(`Model not cached: ${file}`);
+          };
+
+          const [cfgResp, indexerResp] = await Promise.all([
+            fetchCached('onnx/tts.json'),
+            fetchCached('onnx/unicode_indexer.json')
+          ]);
+
+          const cfgs = await cfgResp.json();
+          const indexer = await indexerResp.json();
+          const textProcessor = new UnicodeProcessor(indexer);
+
+          const hasWebGPU = !!navigator.gpu;
+          const sessionOpts = {
+            executionProviders: hasWebGPU ? ['webgpu', 'wasm'] : ['wasm'],
+            graphOptimizationLevel: 'all',
+            logSeverityLevel: 3,
+            logVerbosityLevel: 0
+          };
+
+          async function loadSession(file) {
+            const resp = await fetchCached('onnx/' + file);
+            const bytes = new Uint8Array(await resp.arrayBuffer());
+            const session = await ort.InferenceSession.create(bytes, sessionOpts);
+            return session;
+          }
+
+          const dpOrt = await loadSession('duration_predictor.onnx');
+          const textEncOrt = await loadSession('text_encoder.onnx');
+          const vectorEstOrt = await loadSession('vector_estimator.onnx');
+          const vocoderOrt = await loadSession('vocoder.onnx');
+
+          const tts = new TextToSpeech(cfgs, textProcessor, dpOrt, textEncOrt, vectorEstOrt, vocoderOrt);
+          await tts.warmup();
+          return tts;
+        }
+
+        async warmup() {
+          try {
+            const style = await this.loadVoiceStyle('M1');
+            await this._infer('.', 'en', style, 1, 1.0);
+          } catch (err) {
+            // Ignore warmup failures; the page will fall back to explicit model preparation.
+          }
+        }
+
+        async loadVoiceStyle(voiceName) {
+          if (this.styleCache.has(voiceName)) return this.styleCache.get(voiceName);
+          const fileName = VOICE_STYLE_FILES[voiceName];
+          if (!fileName) throw new Error(`Unknown voice: ${voiceName}`);
+
+          const cache = await caches.open(CACHE_NAME);
+          const resp = await cache.match(MODEL_BASE_URL + fileName);
+          if (!resp) throw new Error(`Missing voice style in cache: ${voiceName}`);
+
+          const styleData = await resp.json();
+          const ttlData = new Float32Array(styleData.style_ttl.data.flat(Infinity));
+          const dpData = new Float32Array(styleData.style_dp.data.flat(Infinity));
+          const style = new Style(ttlData, styleData.style_ttl.dims, dpData, styleData.style_dp.dims);
+          this.styleCache.set(voiceName, style);
+          return style;
+        }
+
+        async synthesize(text, lang, voiceName, totalStep = 6, speed = 1.05) {
+          if (!text || text.trim().length === 0) {
+            return { wav: new Float32Array(0), duration: 0 };
+          }
+          const style = await this.loadVoiceStyle(voiceName);
+          const maxLen = (lang === 'ko' || lang === 'ja') ? 120 : 300;
+          const pieces = chunkText(text, maxLen);
+
+          const chunks = [];
+          let totalSamples = 0;
+          let totalDur = 0;
+
+          for (let i = 0; i < pieces.length; i++) {
+            const piece = pieces[i].trim();
+            if (!piece) continue;
+
+            let { wav, duration } = await this._infer(piece, lang, style, totalStep, speed);
+
+            const silenceThreshold = 0.002;
+            let startIndex = 0;
+            let endIndex = wav.length - 1;
+
+            for (let j = 0; j < wav.length; j++) {
+              if (Math.abs(wav[j]) > silenceThreshold) {
+                startIndex = j;
+                break;
+              }
+            }
+
+            for (let j = wav.length - 1; j >= startIndex; j--) {
+              if (Math.abs(wav[j]) > silenceThreshold) {
+                endIndex = j;
+                break;
+              }
+            }
+
+            if (startIndex > 0 || endIndex < wav.length - 1) {
+              wav = wav.slice(startIndex, endIndex + 1);
+              duration = Math.max(0, wav.length / this.sampleRate);
+            }
+
+            const silenceSeconds = 0.2;
+            const silenceLen = Math.floor(silenceSeconds * this.sampleRate);
+            const silence = new Float32Array(silenceLen).fill(0);
+
+            const expectedLen = Math.floor(duration * this.sampleRate);
+            let targetWav = wav;
+            if (wav.length > expectedLen * 1.5) {
+              targetWav = wav.slice(0, expectedLen);
+            }
+
+            chunks.push(targetWav);
+            totalSamples += targetWav.length;
+            totalDur += duration;
+
+            if (silenceLen > 0) {
+              chunks.push(silence);
+              totalSamples += silenceLen;
+              totalDur += silenceSeconds;
+            }
+          }
+
+          const mergedWav = new Float32Array(totalSamples);
+          let offset = 0;
+          for (const chunk of chunks) {
+            mergedWav.set(chunk, offset);
+            offset += chunk.length;
+          }
+
+          return { wav: mergedWav, duration: totalDur };
+        }
+
+        async _infer(text, lang, style, totalStep, speed) {
+          const { textIds, textMask } = this.textProcessor.call([text], [lang]);
+          const tIdsCopy = new BigInt64Array(textIds[0].map(x => BigInt(x)));
+          const tMaskCopy = new Float32Array(textMask[0][0]);
+
+          const dpOut = await this.dpOrt.run({
+            text_ids: new ort.Tensor('int64', tIdsCopy, [1, textIds[0].length]),
+            style_dp: new ort.Tensor('float32', new Float32Array(style.dpData), style.dpDims),
+            text_mask: new ort.Tensor('float32', tMaskCopy, [1, 1, tMaskCopy.length])
+          });
+
+          const duration = dpOut.duration.data[0] / speed;
+
+          const encOut = await this.textEncOrt.run({
+            text_ids: new ort.Tensor('int64', tIdsCopy, [1, textIds[0].length]),
+            style_ttl: new ort.Tensor('float32', new Float32Array(style.ttlData), style.ttlDims),
+            text_mask: new ort.Tensor('float32', tMaskCopy, [1, 1, tMaskCopy.length])
+          });
+
+          const textEmbData = new Float32Array(encOut.text_emb.data);
+          const textEmbDims = encOut.text_emb.dims;
+          const { xtData, latentMask, dim, len } = this.sampleNoisyLatent(duration, this.cfgs.ae.base_chunk_size, this.cfgs.ttl.chunk_compress_factor, this.cfgs.ttl.latent_dim);
+          const lMaskData = new Float32Array(latentMask[0][0]);
+          const lMaskDims = [1, 1, latentMask[0][0].length];
+
+          let currentXt = xtData;
+          const latentDims = [1, dim, len];
+
+          for (let step = 0; step < totalStep; step++) {
+            const inputs = {
+              noisy_latent: new ort.Tensor('float32', new Float32Array(currentXt), latentDims),
+              text_emb: new ort.Tensor('float32', textEmbData, textEmbDims),
+              style_ttl: new ort.Tensor('float32', new Float32Array(style.ttlData), style.ttlDims),
+              latent_mask: new ort.Tensor('float32', lMaskData, lMaskDims),
+              text_mask: new ort.Tensor('float32', tMaskCopy, [1, 1, tMaskCopy.length]),
+              current_step: new ort.Tensor('float32', new Float32Array([step]), [1]),
+              total_step: new ort.Tensor('float32', new Float32Array([totalStep]), [1])
+            };
+            const vOut = await this.vectorEstOrt.run(inputs);
+            currentXt = new Float32Array(vOut.denoised_latent.data);
+          }
+
+          const vocOut = await this.vocoderOrt.run({
+            latent: new ort.Tensor('float32', new Float32Array(currentXt), latentDims)
+          });
+
+          const wavData = vocOut.wav_tts?.data ?? vocOut.audio?.data;
+          if (!wavData) {
+            throw new Error('Vocoder output did not include wav_tts/audio data. Check the model output contract.');
+          }
+
+          const wav = new Float32Array(wavData);
+          return { wav, duration };
+        }
+
+        sampleNoisyLatent(duration, baseChunkSize, chunkCompress, latentDim) {
+          const wavLen = Math.floor(duration * this.sampleRate);
+          const chunkSize = baseChunkSize * chunkCompress;
+          const latentLen = Math.floor((wavLen + chunkSize - 1) / chunkSize);
+          const latentDimVal = latentDim * chunkCompress;
+
+          const size = latentDimVal * latentLen;
+          const xtData = new Float32Array(size);
+          for (let i = 0; i < size; i++) {
+            xtData[i] = this.randn();
+          }
+
+          const latentMask = [[new Array(latentLen).fill(1.0)]];
+          return { xtData, latentMask, dim: latentDimVal, len: latentLen };
+        }
+
+        randn() {
+          let u = 0, v = 0;
+          while (u === 0) u = Math.random();
+          while (v === 0) v = Math.random();
+          return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+      }
+
+      async function prepareModels() {
+        if (typeof ort === 'undefined') {
+          throw new Error('ONNX Runtime Web is not loaded. Add the CDN script before this page loads.');
+        }
+
+        if (typeof caches === 'undefined') {
+          throw new Error('Cache API is required for the model cache.');
+        }
+
+        warmupInProgress = true;
+        updateButtonState();
+
+        ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/';
+        ort.env.wasm.proxy = false;
+        ort.env.logLevel = 'error';
+        ort.env.wasm.numThreads = window.crossOriginIsolated ? Math.min(navigator.hardwareConcurrency || 4, 6) : 1;
+
+        const cache = await caches.open(CACHE_NAME);
+        const requiredFiles = [...MODEL_FILES, ...Object.values(VOICE_STYLE_FILES)];
+        const missing = [];
+
+        for (const file of requiredFiles) {
+          const url = MODEL_BASE_URL + file;
+          const cached = await cache.match(url);
+          if (!cached) missing.push(file);
+        }
+
+        if (missing.length) {
+          benchmarkState.downloadStartedAt = performance.now();
+          benchmarkState.downloadedBytes = 0;
+          benchmarkState.totalBytes = 0;
+          benchmarkState.downloadCompleteAt = 0;
+          for (const file of missing) {
+            const url = MODEL_BASE_URL + file;
+            const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+            if (!response.ok) throw new Error(`Failed to fetch ${file}: ${response.status}`);
+            const lengthHeader = Number(response.headers.get('content-length') || 0);
+            benchmarkState.totalBytes += lengthHeader || 0;
+          }
+
+          setStatus('Downloading model files...', 'warn');
+          for (const file of missing) {
+            const url = MODEL_BASE_URL + file;
+            const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+            if (!response.ok) throw new Error(`Failed to fetch ${file}: ${response.status}`);
+            const lengthHeader = Number(response.headers.get('content-length') || 0);
+            benchmarkState.downloadedBytes += lengthHeader || 0;
+            updateBenchmarkUi();
+            await cache.put(url, response.clone());
+            logMessage(`Cached ${file}`);
+          }
+          benchmarkState.downloadCompleteAt = performance.now();
+        }
+
+        try {
+          const warmStart = performance.now();
+          engine = await TextToSpeech.load();
+          benchmarkState.warmReadyAt = performance.now();
+          benchmarkState.warmupMs = benchmarkState.warmReadyAt - warmStart;
+          setMemoryUsage();
+          voiceInfoEl.textContent = 'Engine ready. WebGPU/WASM path loaded and model cache prepared.';
+          setStatus('Supertonic ready.', 'ok');
+          logMessage(`Model load complete. Warmed in ${benchmarkState.warmupMs.toFixed(0)} ms.`);
+          updateButtonState();
+          updateBenchmarkUi();
+        } finally {
+          warmupInProgress = false;
+          updateButtonState();
+        }
+      }
+
+      async function synthesizeCurrentText() {
+        const text = textInput.value.trim();
+        if (!text) {
+          setStatus('Add some text first.', 'error');
+          return;
+        }
+
+        if (!engine) {
+          setStatus('Preparing engine...', 'warn');
+          await prepareModels();
+        }
+
+        if (activeSession) {
+          clearBenchmarkSession();
+        }
+
+        benchmarkState.synthesisStartedAt = performance.now();
+        benchmarkState.firstSpeechAt = 0;
+        benchmarkState.warmWaitMs = null;
+
+        const voice = voiceSelect.value;
+        const lang = langSelect.value;
+        const speed = Number(speedSlider.value);
+
+        if (activeMode.value === 'sentence') {
+          const pieces = chunkText(text, 300);
+          if (!pieces.length) {
+            setStatus('No sentence chunks found.', 'error');
+            return;
+          }
+
+          const session = {
+            id: ++sentenceSessionToken,
+            mode: 'sentence',
+            chunks: pieces,
+            voice: voice,
+            lang: lang,
+            speed: speed,
+            buffers: new Array(pieces.length).fill(null),
+            readyResolvers: [],
+            readyPromises: [],
+            isStopped: false,
+            isPaused: false,
+            playbackStarted: false,
+            currentPlayingIndex: 0,
+            stopActiveSource: null,
+            playbackLoopStarted: false,
+            firstSpeechReadyAt: null,
+            chunkStats: []
+          };
+
+          for (let i = 0; i < pieces.length; i++) {
+            session.readyPromises[i] = new Promise(resolve => {
+              session.readyResolvers[i] = resolve;
+            });
+          }
+
+          activeSession = session;
+          updateButtonState();
+          setStatus('Sentence mode started: generating audio in background...', 'ok');
+          logMessage(`Queued ${pieces.length} chunk(s). Background synthesis started.`);
+
+          (async () => {
+            for (let i = 0; i < session.chunks.length; i++) {
+              if (session.isStopped) {
+                break;
+              }
+
+              const piece = session.chunks[i];
+              const start = performance.now();
+
+              try {
+                const result = await engine.synthesize(piece, session.lang, session.voice, 6, session.speed);
+                if (session.isStopped) break;
+
+                const synthElapsed = performance.now() - start;
+                session.buffers[i] = result;
+                session.chunkStats.push({
+                  mode: 'chunk',
+                  index: i + 1,
+                  label: `Chunk ${i + 1}`,
+                  elapsedMs: synthElapsed,
+                  words: piece.split(/\s+/).filter(Boolean).length,
+                  samples: result.wav?.length || 0,
+                  speed: session.speed
+                });
+                benchmarkState.synthStats = session.chunkStats.slice();
+                updateBenchmarkUi();
+                if (session.readyResolvers[i]) session.readyResolvers[i](result);
+              } catch (err) {
+                session.buffers[i] = { wav: new Float32Array(0), duration: 0 };
+                if (session.readyResolvers[i]) session.readyResolvers[i](session.buffers[i]);
+              }
+            }
+          })();
+
+          (async () => {
+            if (session.playbackLoopStarted) return;
+            session.playbackLoopStarted = true;
+            const ctx = getAudioCtx();
+            if (ctx.state === 'suspended' && !session.isPaused) {
+              try { await ctx.resume(); } catch (e) {}
+            }
+
+            while (session.currentPlayingIndex < session.chunks.length && !session.isStopped) {
+              const idx = session.currentPlayingIndex;
+
+              while (session.isPaused && !session.isStopped) {
+                await new Promise(r => setTimeout(r, 100));
+              }
+              if (session.isStopped) break;
+
+              if (!session.buffers[idx]) {
+                setStatus(`Waiting for chunk ${idx + 1}/${session.chunks.length} to be ready...`, 'warn');
+                logMessage(`Waiting for chunk ${idx + 1} generation to finish...`);
+                await session.readyPromises[idx];
+              }
+              if (session.isStopped) break;
+
+              while (session.isPaused && !session.isStopped) {
+                await new Promise(r => setTimeout(r, 100));
+              }
+              if (session.isStopped) break;
+
+              const audioData = session.buffers[idx];
+              if (!audioData || !audioData.wav || audioData.wav.length === 0) {
+                session.currentPlayingIndex++;
+                continue;
+              }
+
+              setStatus(`Playing chunk ${idx + 1}/${session.chunks.length}...`, 'ok');
+              logMessage(`[Playing chunk ${idx + 1}/${session.chunks.length}] "${session.chunks[idx]}"`);
+              markFirstSpeechAt();
+
+              const outcome = await playChunkWithSkipSupport(session, audioData);
+              if (session.isStopped) break;
+
+              if (outcome === 'restart') {
+                session.currentPlayingIndex = 0;
+                logMessage('Replay requested from chunk 1; playback loop restarted from the beginning.');
+                continue;
+              }
+
+              if (outcome === 'skipped') {
+                session.currentPlayingIndex = idx + 1;
+                logMessage(`Skipped current chunk. Moving immediately to chunk ${session.currentPlayingIndex + 1}...`);
+                continue;
+              }
+
+              session.currentPlayingIndex = idx + 1;
+
+              if (session.currentPlayingIndex < session.chunks.length && !session.isStopped) {
+                await new Promise(r => setTimeout(r, CHUNK_GAP_SECONDS * 1000));
+              }
+            }
+
+            if (!session.isStopped && session.currentPlayingIndex >= session.chunks.length) {
+              setStatus('Sentence queue complete.', 'ok');
+              logMessage(`Finished playing all ${session.chunks.length} chunks.`);
+            }
+          })();
+
+          return;
+        }
+
+        const t0 = performance.now();
+        setStatus('Synthesizing whole paragraph...', 'warn');
+        logMessage(`Synthesizing whole paragraph with ${voice} (${lang}) at ${speed.toFixed(2)}x...`);
+        const result = await engine.synthesize(text, lang, voice, 6, speed);
+        const synthElapsed = performance.now() - t0;
+        const sampleCount = result.wav?.length || 0;
+        benchmarkState.synthStats = [{
+          mode: 'full',
+          label: 'Full paragraph',
+          elapsedMs: synthElapsed,
+          samples: sampleCount,
+          words: text.split(/\s+/).filter(Boolean).length,
+          speed: speed
+        }];
+        updateBenchmarkUi();
+
+        activeSession = {
+          id: ++sentenceSessionToken,
+          mode: 'paragraph',
+          voice,
+          lang,
+          speed,
+          chunks: [text],
+          buffers: [result],
+          isStopped: false,
+          isPaused: false,
+          playbackStarted: false,
+          currentPlayingIndex: 0,
+          stopActiveSource: null,
+          readyResolvers: [],
+          readyPromises: [],
+          playbackLoopStarted: true,
+          chunkStats: []
+        };
+
+        updateButtonState();
+
+        playParagraphSession(activeSession, result.wav, engine.sampleRate);
+        setStatus('Whole paragraph mode: playing.', 'ok');
+        logMessage(`Rendered paragraph using ${voice} (${lang}) at ${speed.toFixed(2)}x.`);
+      }
+
+      prepareBtn.addEventListener('click', async () => {
+        if (engine || warmupInProgress || isDownloadInProgress()) return;
+        try {
+          await prepareModels();
+        } catch (err) {
+          setStatus(err.message || 'Model preparation failed.', 'error');
+        }
+      });
+
+      playBtn.addEventListener('click', async () => {
+        if (!engine || warmupInProgress || isDownloadInProgress() || isSynthesizing() || isPlaybackActive()) return;
+        try {
+          await synthesizeCurrentText();
+        } catch (err) {
+          setStatus(err.message || 'Synthesis failed.', 'error');
+        }
+      });
+
+      playFromBeginningBtn.addEventListener('click', () => {
+        if (!activeSession || !activeSession.playbackStarted || activeSession.isStopped) {
+          setStatus('No active benchmark session to replay from the beginning.', 'warn');
+          return;
+        }
+        playFromBeginning();
+      });
+
+      pauseBtn.addEventListener('click', () => {
+        if (!isPlaybackActive()) return;
+        pausePlayback();
+      });
+
+      resumeBtn.addEventListener('click', () => {
+        if (!isPlaybackActive()) return;
+        resumePlayback();
+      });
+
+      skipBtn.addEventListener('click', () => {
+        if (!isPlaybackActive() || activeSession?.mode !== 'sentence') return;
+        skipToNextChunk();
+      });
+
+      stopBtn.addEventListener('click', () => {
+        if (!activeSession || activeSession.isStopped) return;
+        clearBenchmarkSession();
+        setStatus('Benchmark session cleared and playback stopped.', 'warn');
+        logMessage('Cleared the active synthesis session and stopped all playback.');
+      });
+
+      stopBtn.textContent = 'Clear and Stop';
+      updateButtonState();
+
+      setStatus('Checking cached model...', 'warn');
+      logMessage('Benchmark initialized: cache -> configure ORT -> warm model -> measure synthesis timing.');
+      updateBenchmarkUi();
+      setTimeout(() => {
+        warmCachedModelIfAvailable();
+      }, 0);
+    </script>
+  </body>
+</html>
